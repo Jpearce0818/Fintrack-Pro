@@ -350,7 +350,7 @@
                 dpId: document.getElementById('dp-id'), dpAmt: document.getElementById('dp-amt'),
                 listT: document.getElementById('list-transactions'), listB: document.getElementById('list-bills'), listD: document.getElementById('list-debts'), listDP: document.getElementById('list-debt-payments'), listS: document.getElementById('list-savings'), listSC: document.getElementById('list-savings-contrib'),
                 sBal: document.getElementById('stat-balance'), sInc: document.getElementById('stat-income'), sExp: document.getElementById('stat-expenses'), sUnp: document.getElementById('stat-unpaid'),
-                sDebt: document.getElementById('stat-debt')
+                sDebt: document.getElementById('stat-debt'), sSavings: document.getElementById('s-tot-savings'), sName: document.getElementById('sv-name'), sBal: document.getElementById('sv-bal'), sApy: document.getElementById('sv-apy'), sContrib: document.getElementById('sv-contrib'), scId: document.getElementById('sc-id'), scAmt: document.getElementById('sc-amt'), scDay: document.getElementById('sc-day')
             };
         } catch(e) { alert("DOM Init Error: " + e.message); }
 
@@ -468,7 +468,7 @@
         function initState() {
             try {
                 document.getElementById('header-month').textContent = `- ${currMonthLong}`;
-                dom.tDay.value = getTodayStr(); dom.bDay.value = getTodayStr(); dom.dpDay.value = getTodayStr();
+                dom.tDay.value = getTodayStr(); dom.bDay.value = getTodayStr(); dom.dpDay.value = getTodayStr(); if(dom.scDay) dom.scDay.value = getTodayStr();
                 
                 const saved = localStorage.getItem('fintrack_ios_data');
                 if (saved) {
