@@ -149,7 +149,7 @@
                 <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl flex justify-between items-center">
                     <h3 class="text-sm font-bold text-white flex items-center">
                         <input type="checkbox" id="chk-all-t" onchange="toggleAllT(this.checked)" class="mr-2 w-4 h-4 accent-indigo-500 rounded bg-slate-900 border-slate-600">
-                        <i class="fa-solid fa-list text-indigo-400 mr-2"></i>Ledger
+                        <i class="fa-solid fa-list text-indigo-400 mr-2"></i>Ledger <span id="subtotal-t" class="ml-2 text-xs text-slate-400 font-normal"></span>
                     </h3>
                     <div class="flex items-center gap-2">
                         <button id="btn-bulk-del-t" onclick="deleteSelectedT()" class="hidden text-rose-400 hover:text-rose-300 text-xs font-bold px-2 py-1 bg-rose-900/30 rounded border border-rose-800"><i class="fa-solid fa-trash"></i></button>
@@ -183,7 +183,7 @@
                 <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl flex justify-between items-center">
                     <h3 class="text-sm font-bold text-white flex items-center">
                         <input type="checkbox" id="chk-all-b" onchange="toggleAllB(this.checked)" class="mr-2 w-4 h-4 accent-amber-500 rounded bg-slate-900 border-slate-600">
-                        <i class="fa-solid fa-file-invoice text-amber-400 mr-2"></i>Bills
+                        <i class="fa-solid fa-file-invoice text-amber-400 mr-2"></i>Bills <span id="subtotal-b" class="ml-2 text-xs text-slate-400 font-normal"></span>
                     </h3>
                     <div class="flex items-center gap-2">
                         <button id="btn-bulk-pay-b" onclick="paySelectedB()" class="hidden text-emerald-400 hover:text-emerald-300 text-xs font-bold px-2 py-1 bg-emerald-900/30 rounded border border-emerald-800"><i class="fa-solid fa-check"></i></button>
@@ -228,7 +228,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[250px]">
                     <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl flex justify-between items-center">
-                        <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-list text-rose-400 mr-2"></i>Active Debts</h3>
+                        <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-list text-rose-400 mr-2"></i>Active Debts <span id="subtotal-d" class="ml-2 text-xs text-slate-400 font-normal"></span></h3>
                         <select id="sort-d" onchange="changeSort('d', this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1 outline-none">
                             <option value="bal-desc">Balance (High)</option>
                             <option value="name">Name (A-Z)</option>
@@ -558,6 +558,16 @@
                 dom.sUnp.textContent = formatC(unp);
                 dom.sBal.textContent = formatC(inc - exp);
                 dom.sDebt.textContent = formatC(totDebt);
+
+                const tNet = data.transactions.reduce((acc, t) => t.type === 'income' ? acc + t.amount : acc - t.amount, 0);
+                const bTot = data.bills.reduce((acc, b) => acc + b.amount, 0);
+                
+                const subT = document.getElementById('subtotal-t');
+                if(subT) subT.textContent = `(${formatC(tNet)})`;
+                const subB = document.getElementById('subtotal-b');
+                if(subB) subB.textContent = `(${formatC(bTot)})`;
+                const subD = document.getElementById('subtotal-d');
+                if(subD) subD.textContent = `(${formatC(totDebt)})`;
 
                 let sortedT = [...data.transactions];
                 if (sortPrefs.t === 'date-desc') sortedT.sort((a,b)=>getDayVal(b)-getDayVal(a));
