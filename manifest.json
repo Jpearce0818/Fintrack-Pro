@@ -1,0 +1,16 @@
+{
+  "name": "FinTrack Pro",
+  "short_name": "FinTrack",
+  "description": "Monthly Financial Tracker",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "apple-touch-icon.jpg",
+      "sizes": "1024x1024",
+      "type": "image/jpeg"
+    }
+  ]
+}
