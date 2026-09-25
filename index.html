@@ -308,6 +308,15 @@
                     <i class="fa-solid fa-upload"></i> Import from .csv
                 </button>
             </section>
+            
+            <section class="bg-slate-800 rounded-xl p-4 border border-rose-900/50 flex flex-col justify-center items-center text-center">
+                <i class="fa-solid fa-trash-can text-4xl text-rose-500 mb-3"></i>
+                <h3 class="text-sm font-bold text-white mb-1">Clear All Data</h3>
+                <p class="text-[10px] text-slate-400 mb-4">Permanently delete all your tracked data and start fresh.</p>
+                <button type="button" onclick="clearAllData()" class="w-full bg-rose-600 text-white rounded-lg py-3 text-sm font-bold flex justify-center items-center gap-2 shadow-lg shadow-rose-900/20">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Factory Reset
+                </button>
+            </section>
         </div>
     </main>
 
@@ -448,6 +457,15 @@
             } catch(e) { alert("Tab Switch Error: " + e.message); }
         }
 
+        function clearAllData() {
+            if(confirm("Are you SURE you want to delete ALL your financial data? This cannot be undone!")) {
+                localStorage.removeItem('fintrack_ios_data');
+                data = { transactions: [], bills: [], debts: [], debtPayments: [], savings: [], savingsContributions: [], lastMonth: new Date().getMonth() };
+                updateUI();
+                alert("All data cleared successfully.");
+            }
+        }
+        
         function saveState() {
             try {
                 localStorage.setItem('fintrack_ios_data', JSON.stringify(data));
