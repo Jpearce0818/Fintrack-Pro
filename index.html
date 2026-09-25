@@ -2,7 +2,7 @@
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>FinTrack Pro</title>
@@ -10,7 +10,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <script>
         tailwind.config = {
@@ -40,9 +39,11 @@
         /* Restore rounded corners safely */
         .rounded-lg { border-radius: 0.5rem; }
         .rounded-full { border-radius: 9999px; }
+        .rounded-xl { border-radius: 0.75rem; }
+        .rounded-t-xl { border-top-left-radius: 0.75rem; border-top-right-radius: 0.75rem; }
         
-        .pdf-export-mode { background: #0f172a !important; padding: 20px !important; width: 100% !important; }
-        .pdf-export-mode form, .pdf-export-mode button:not(.pdf-keep) { display: none !important; }
+        /* Safe Area Padding for iOS Bottom Bar */
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body class="text-slate-300 bg-slate-900 h-screen flex flex-col overflow-hidden">
@@ -52,13 +53,11 @@
             <div class="bg-indigo-500 text-white p-2 rounded-lg"><i class="fa-solid fa-wallet"></i></div>
             <h1 class="text-lg font-bold text-white tracking-tight">FinTrack iOS</h1>
         </div>
-        <button type="button" onclick="toggleModal('share-modal')" class="bg-slate-700 hover:bg-slate-600 text-white rounded-lg px-3 py-1.5 text-sm transition-colors flex items-center gap-2 border border-slate-600">
-            <i class="fa-solid fa-share"></i> Export
-        </button>
     </header>
 
-    <main class="flex-1 overflow-y-auto p-3 md:p-6" id="main-scroll-container">
-        <div id="pdf-content-area" class="max-w-6xl mx-auto space-y-6">
+    <main class="flex-1 overflow-y-auto p-3 md:p-6 pb-24" id="main-scroll-container">
+        
+        <div id="view-home" class="space-y-6 max-w-6xl mx-auto block">
             
             <section class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 relative overflow-hidden">
@@ -81,149 +80,166 @@
                     <h2 class="text-xl md:text-2xl font-bold text-amber-400 truncate" id="stat-unpaid">$0.00</h2>
                     <i class="fa-solid fa-file-invoice-dollar absolute bottom-2 right-2 text-3xl opacity-10 text-amber-500"></i>
                 </div>
+                <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 relative overflow-hidden col-span-2 md:col-span-full">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Active Debt</p>
+                    <h2 class="text-xl md:text-2xl font-bold text-rose-400 truncate" id="stat-debt">$0.00</h2>
+                    <i class="fa-solid fa-building-columns absolute bottom-2 right-2 text-3xl opacity-10 text-rose-500"></i>
+                </div>
             </section>
 
-            <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div class="lg:col-span-2 bg-slate-800 rounded-xl p-4 border border-slate-700">
-                    <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2"><i class="fa-solid fa-chart-pie text-indigo-400"></i> Analytics</h3>
+            <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                    <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2"><i class="fa-solid fa-chart-pie text-indigo-400"></i> Expense Breakdown</h3>
                     <div class="relative h-48 md:h-64 w-full flex items-center justify-center">
                         <canvas id="expenseChart"></canvas>
                         <p id="empty-chart" class="absolute text-slate-500 text-xs hidden">No expenses to chart.</p>
                     </div>
                 </div>
+                <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                    <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2"><i class="fa-solid fa-chart-pie text-rose-400"></i> Debt Breakdown</h3>
+                    <div class="relative h-48 md:h-64 w-full flex items-center justify-center">
+                        <canvas id="debtChart"></canvas>
+                        <p id="empty-debt-chart" class="absolute text-slate-500 text-xs hidden">No active debt to chart.</p>
+                    </div>
+                </div>
+            </section>
 
-                <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 flex flex-col" data-html2canvas-ignore>
+            <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 flex flex-col justify-center">
                     <h3 class="text-sm font-bold text-white mb-2 flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-emerald-400"></i> Forecaster</h3>
                     <p class="text-[10px] text-slate-400 mb-3">Project balance via average net income.</p>
                     <div class="flex gap-2 mb-4">
                         <input type="number" id="forecast-months" value="6" min="1" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
                         <button type="button" onclick="handleForecast()" class="bg-slate-700 text-white rounded-lg px-3 text-sm border border-slate-600 whitespace-nowrap">Calc</button>
                     </div>
-                    <div class="mt-auto bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 text-center">
+                    <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 text-center">
                         <p class="text-[10px] font-bold text-slate-400 uppercase">Projected Balance</p>
                         <h2 class="text-xl font-bold text-white mt-1" id="forecast-result">$0.00</h2>
                     </div>
                 </div>
             </section>
+        </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                
-                <!-- Transactions Area -->
-                <div class="space-y-4">
-                    <section class="bg-slate-800 rounded-xl p-4 border border-slate-700" data-html2canvas-ignore>
-                        <h3 class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-plus-circle text-indigo-400 mr-2"></i>Log Transaction</h3>
-                        <form id="form-transaction" onsubmit="return handleAddTransaction(event)" class="space-y-3">
-                            <div class="grid grid-cols-2 gap-3">
-                                <select id="t-type" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"><option value="income">Income</option><option value="expense">Expense</option></select>
-                                <input type="number" id="t-amount" step="0.01" min="0" placeholder="Amount ($)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-                            </div>
-                            <input type="text" id="t-cat" placeholder="Name (e.g. Salary)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-                            <div class="grid grid-cols-2 gap-3">
-                                <input type="date" id="t-date" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white" style="color-scheme: dark;">
-                                <input type="text" id="t-tags" placeholder="Tags (e.g. tax, misc)" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-                            </div>
-                            <button type="submit" class="w-full bg-indigo-600 text-white rounded-lg py-2 text-sm font-bold">Save Transaction</button>
-                        </form>
-                    </section>
-                    
-                    <section class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[300px]">
-                        <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl"><h3 class="text-sm font-bold text-white"><i class="fa-solid fa-list text-indigo-400 mr-2"></i>Transactions Ledger</h3></div>
-                        <div class="flex-1 overflow-y-auto hide-scroll p-0"><ul id="list-transactions" class="divide-y divide-slate-700/50"></ul></div>
-                    </section>
-                </div>
+        <div id="view-transactions" class="hidden space-y-4 max-w-2xl mx-auto">
+            <section class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <h3 class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-plus-circle text-indigo-400 mr-2"></i>Log Transaction</h3>
+                <form id="form-transaction" onsubmit="return handleAddTransaction(event)" class="space-y-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <select id="t-type" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"><option value="income">Income</option><option value="expense">Expense</option></select>
+                        <input type="number" id="t-amount" step="0.01" min="0" placeholder="Amount ($)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                    <input type="text" id="t-cat" placeholder="Name (e.g. Salary)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="date" id="t-date" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white" style="color-scheme: dark;">
+                        <input type="text" id="t-tags" placeholder="Tags (e.g. tax, misc)" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 text-white rounded-lg py-2 text-sm font-bold shadow-lg shadow-indigo-900/20">Save Transaction</button>
+                </form>
+            </section>
+            
+            <section class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[400px]">
+                <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl"><h3 class="text-sm font-bold text-white"><i class="fa-solid fa-list text-indigo-400 mr-2"></i>Transactions Ledger</h3></div>
+                <div class="flex-1 overflow-y-auto hide-scroll p-0"><ul id="list-transactions" class="divide-y divide-slate-700/50"></ul></div>
+            </section>
+        </div>
 
-                <!-- Bills Area -->
-                <div class="space-y-4">
-                    <section class="bg-slate-800 rounded-xl p-4 border border-slate-700" data-html2canvas-ignore>
-                        <h3 class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-calendar-plus text-amber-400 mr-2"></i>Add Bill</h3>
-                        <form id="form-bill" onsubmit="return handleAddBill(event)" class="space-y-3">
-                            <input type="text" id="b-name" placeholder="Bill Name" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-                            <div class="grid grid-cols-2 gap-3">
-                                <input type="number" id="b-amount" step="0.01" min="0" placeholder="Amount ($)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-                                <input type="date" id="b-date" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white" style="color-scheme: dark;">
-                            </div>
-                            <input type="text" id="b-tags" placeholder="Tags (e.g. utility)" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-                            <button type="submit" class="w-full bg-amber-600 text-white rounded-lg py-2 text-sm font-bold">Save Bill</button>
-                        </form>
-                    </section>
+        <div id="view-bills" class="hidden space-y-4 max-w-2xl mx-auto">
+            <section class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <h3 class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-calendar-plus text-amber-400 mr-2"></i>Add Bill</h3>
+                <form id="form-bill" onsubmit="return handleAddBill(event)" class="space-y-3">
+                    <input type="text" id="b-name" placeholder="Bill Name" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="number" id="b-amount" step="0.01" min="0" placeholder="Amount ($)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                        <input type="date" id="b-date" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white" style="color-scheme: dark;">
+                    </div>
+                    <input type="text" id="b-tags" placeholder="Tags (e.g. utility)" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    <button type="submit" class="w-full bg-amber-600 text-white rounded-lg py-2 text-sm font-bold shadow-lg shadow-amber-900/20">Save Bill</button>
+                </form>
+            </section>
 
-                    <section class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[300px]">
-                        <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl"><h3 class="text-sm font-bold text-white"><i class="fa-solid fa-file-invoice text-amber-400 mr-2"></i>Upcoming Bills</h3></div>
-                        <div class="flex-1 overflow-y-auto hide-scroll p-3 bg-slate-900/30"><div id="list-bills" class="space-y-2"></div></div>
-                    </section>
-                </div>
+            <section class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[400px]">
+                <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl"><h3 class="text-sm font-bold text-white"><i class="fa-solid fa-file-invoice text-amber-400 mr-2"></i>Upcoming Bills</h3></div>
+                <div class="flex-1 overflow-y-auto hide-scroll p-3 bg-slate-900/30"><div id="list-bills" class="space-y-2"></div></div>
+            </section>
+        </div>
+
+        <div id="view-debt" class="hidden space-y-4 max-w-2xl mx-auto">
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-4">
+                <h3 class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-hand-holding-dollar text-rose-400 mr-2"></i>Add Debt</h3>
+                <form id="form-debt" onsubmit="return handleAddDebt(event)" class="space-y-3">
+                    <input type="text" id="d-name" placeholder="Debt Name" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="number" id="d-bal" step="0.01" min="0" placeholder="Balance ($)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                        <input type="number" id="d-apr" step="0.01" min="0" placeholder="APR (%)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                    <input type="number" id="d-pmt" step="0.01" min="0" placeholder="Monthly Payment ($)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    <button type="submit" class="w-full bg-rose-600 text-white rounded-lg py-2 text-sm font-bold shadow-lg shadow-rose-900/20">Track Debt</button>
+                </form>
+            </div>
+            
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-4">
+                <h3 class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-money-bill-transfer text-emerald-400 mr-2"></i>Log Payment</h3>
+                <form id="form-debt-pmt" onsubmit="return handleDebtPayment(event)" class="space-y-3">
+                    <select id="dp-id" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"><option value="">-- Select Debt --</option></select>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="number" id="dp-amt" step="0.01" min="0.01" placeholder="Amount ($)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                        <input type="date" id="dp-date" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white" style="color-scheme: dark;">
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 text-white rounded-lg py-2 text-sm font-bold shadow-lg shadow-emerald-900/20">Submit Payment</button>
+                </form>
             </div>
 
-            <h2 class="text-lg font-bold text-white mt-8 mb-4 border-b border-slate-700 pb-2"><i class="fa-solid fa-building-columns text-rose-400 mr-2"></i>Debt Payoff Planner</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[250px]">
+                    <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl"><h3 class="text-sm font-bold text-white"><i class="fa-solid fa-list text-rose-400 mr-2"></i>Active Debts</h3></div>
+                    <div class="flex-1 overflow-y-auto p-3 hide-scroll bg-slate-900/30"><div id="list-debts" class="space-y-2"></div></div>
+                </div>
+                <div class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[250px]">
+                    <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl"><h3 class="text-sm font-bold text-white"><i class="fa-solid fa-history text-emerald-400 mr-2"></i>Payment History</h3></div>
+                    <div class="flex-1 overflow-y-auto p-3 hide-scroll bg-slate-900/30"><div id="list-debt-payments" class="space-y-2"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-settings" class="hidden space-y-4 max-w-2xl mx-auto">
+            <section class="bg-slate-800 rounded-xl p-4 border border-slate-700 flex flex-col justify-center items-center text-center">
+                <i class="fa-solid fa-file-csv text-4xl text-emerald-500 mb-3"></i>
+                <h3 class="text-sm font-bold text-white mb-1">Export Data</h3>
+                <p class="text-[10px] text-slate-400 mb-4">Download a .csv file of your financial data.</p>
+                <button type="button" onclick="exportToCSV()" class="w-full bg-emerald-600 text-white rounded-lg py-3 text-sm font-bold flex justify-center items-center gap-2 shadow-lg shadow-emerald-900/20">
+                    <i class="fa-solid fa-download"></i> Export to .csv
+                </button>
+            </section>
             
-            <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 pb-12">
-                <div class="space-y-4 flex flex-col" data-html2canvas-ignore>
-                    <div class="bg-slate-800 rounded-xl border border-slate-700 p-4">
-                        <h3 class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-hand-holding-dollar text-rose-400 mr-2"></i>Add Debt</h3>
-                        <form id="form-debt" onsubmit="return handleAddDebt(event)" class="space-y-3">
-                            <input type="text" id="d-name" placeholder="Debt Name" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-                            <div class="grid grid-cols-2 gap-3">
-                                <input type="number" id="d-bal" step="0.01" min="0" placeholder="Balance ($)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-                                <input type="number" id="d-apr" step="0.01" min="0" placeholder="APR (%)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-                            </div>
-                            <input type="number" id="d-pmt" step="0.01" min="0" placeholder="Monthly Payment ($)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-                            <button type="submit" class="w-full bg-rose-600 text-white rounded-lg py-2 text-sm font-bold">Track Debt</button>
-                        </form>
-                    </div>
-                    <div class="bg-slate-800 rounded-xl border border-slate-700 flex-1 flex flex-col min-h-[200px]">
-                        <div class="p-3 border-b border-slate-700 bg-slate-800/50"><h3 class="text-sm font-bold text-white"><i class="fa-solid fa-list text-rose-400 mr-2"></i>Active Debts</h3></div>
-                        <div class="flex-1 overflow-y-auto p-3 hide-scroll bg-slate-900/30"><div id="list-debts" class="space-y-2"></div></div>
-                    </div>
-                </div>
-
-                <div class="space-y-4 flex flex-col" data-html2canvas-ignore>
-                    <div class="bg-slate-800 rounded-xl border border-slate-700 p-4">
-                        <h3 class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-money-bill-transfer text-emerald-400 mr-2"></i>Log Payment</h3>
-                        <form id="form-debt-pmt" onsubmit="return handleDebtPayment(event)" class="space-y-3">
-                            <select id="dp-id" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"><option value="">-- Select Debt --</option></select>
-                            <div class="grid grid-cols-2 gap-3">
-                                <input type="number" id="dp-amt" step="0.01" min="0.01" placeholder="Amount ($)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-                                <input type="date" id="dp-date" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white" style="color-scheme: dark;">
-                            </div>
-                            <button type="submit" class="w-full bg-emerald-600 text-white rounded-lg py-2 text-sm font-bold">Submit Payment</button>
-                        </form>
-                    </div>
-                    <div class="bg-slate-800 rounded-xl border border-slate-700 flex-1 flex flex-col min-h-[200px]">
-                        <div class="p-3 border-b border-slate-700 bg-slate-800/50"><h3 class="text-sm font-bold text-white"><i class="fa-solid fa-history text-emerald-400 mr-2"></i>History</h3></div>
-                        <div class="flex-1 overflow-y-auto p-3 hide-scroll bg-slate-900/30"><div id="list-debt-payments" class="space-y-2"></div></div>
-                    </div>
-                </div>
-
-                <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 flex flex-col h-full min-h-[300px]">
-                    <h3 class="text-sm font-bold text-white mb-2"><i class="fa-solid fa-chart-line text-rose-400 mr-2"></i>Projection</h3>
-                    <div class="relative flex-1 w-full flex items-center justify-center">
-                        <canvas id="debtChart"></canvas>
-                        <p id="empty-debt-chart" class="absolute text-slate-500 text-xs">No debts tracked.</p>
-                    </div>
-                </div>
+            <section class="bg-slate-800 rounded-xl p-4 border border-slate-700 flex flex-col justify-center items-center text-center">
+                <i class="fa-solid fa-file-import text-4xl text-indigo-500 mb-3"></i>
+                <h3 class="text-sm font-bold text-white mb-1">Import Data</h3>
+                <p class="text-[10px] text-slate-400 mb-4">Restore your database from a previously exported .csv file.</p>
+                <input type="file" id="csv-upload" accept=".csv" class="hidden" onchange="importFromCSV(event)">
+                <button type="button" onclick="document.getElementById('csv-upload').click()" class="w-full bg-indigo-600 text-white rounded-lg py-3 text-sm font-bold flex justify-center items-center gap-2 shadow-lg shadow-indigo-900/20">
+                    <i class="fa-solid fa-upload"></i> Import from .csv
+                </button>
             </section>
         </div>
     </main>
 
-    <div id="share-modal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg overflow-hidden flex flex-col max-h-full">
-            <div class="p-4 border-b border-slate-700 flex justify-between items-center">
-                <h2 class="text-lg font-bold text-white">Export & Sync</h2>
-                <button type="button" onclick="toggleModal('share-modal')" class="text-slate-400 hover:text-white p-2 text-xl"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="p-4 space-y-4 overflow-y-auto">
-                <button type="button" onclick="exportToPDF()" class="w-full bg-rose-600 text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2"><i class="fa-regular fa-file-pdf"></i> Save as PDF</button>
-                <div class="border-t border-slate-700 pt-4">
-                    <p class="text-xs text-slate-400 mb-2">Sync Code (Copy & Paste to another device)</p>
-                    <textarea id="sync-code" rows="3" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-xs font-mono text-slate-300"></textarea>
-                    <div class="flex gap-2 mt-2">
-                        <button type="button" onclick="generateSync()" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-bold">Generate Code</button>
-                        <button type="button" onclick="importSync()" class="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-bold">Import Data</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <nav class="fixed bottom-0 left-0 w-full bg-slate-800/95 backdrop-blur border-t border-slate-700 flex justify-around pb-safe z-50">
+        <button onclick="switchTab('home')" id="nav-home" class="flex-1 py-3 flex flex-col items-center text-indigo-400 active-tab transition-colors">
+            <i class="fa-solid fa-house mb-1 text-lg"></i><span class="text-[10px] font-bold">Home</span>
+        </button>
+        <button onclick="switchTab('transactions')" id="nav-transactions" class="flex-1 py-3 flex flex-col items-center text-slate-500 transition-colors">
+            <i class="fa-solid fa-right-left mb-1 text-lg"></i><span class="text-[10px] font-bold">Transacts</span>
+        </button>
+        <button onclick="switchTab('bills')" id="nav-bills" class="flex-1 py-3 flex flex-col items-center text-slate-500 transition-colors">
+            <i class="fa-solid fa-file-invoice mb-1 text-lg"></i><span class="text-[10px] font-bold">Bills</span>
+        </button>
+        <button onclick="switchTab('debt')" id="nav-debt" class="flex-1 py-3 flex flex-col items-center text-slate-500 transition-colors">
+            <i class="fa-solid fa-credit-card mb-1 text-lg"></i><span class="text-[10px] font-bold">Debt</span>
+        </button>
+        <button onclick="switchTab('settings')" id="nav-settings" class="flex-1 py-3 flex flex-col items-center text-slate-500 transition-colors">
+            <i class="fa-solid fa-gear mb-1 text-lg"></i><span class="text-[10px] font-bold">Settings</span>
+        </button>
+    </nav>
 
     <script>
         // STRICT ERROR HANDLING FOR IOS SAFARI
@@ -242,13 +258,15 @@
                 dName: document.getElementById('d-name'), dBal: document.getElementById('d-bal'), dApr: document.getElementById('d-apr'), dPmt: document.getElementById('d-pmt'),
                 dpId: document.getElementById('dp-id'), dpAmt: document.getElementById('dp-amt'),
                 listT: document.getElementById('list-transactions'), listB: document.getElementById('list-bills'), listD: document.getElementById('list-debts'), listDP: document.getElementById('list-debt-payments'),
-                sBal: document.getElementById('stat-balance'), sInc: document.getElementById('stat-income'), sExp: document.getElementById('stat-expenses'), sUnp: document.getElementById('stat-unpaid')
+                sBal: document.getElementById('stat-balance'), sInc: document.getElementById('stat-income'), sExp: document.getElementById('stat-expenses'), sUnp: document.getElementById('stat-unpaid'),
+                sDebt: document.getElementById('stat-debt')
             };
         } catch(e) { alert("DOM Init Error: " + e.message); }
 
         // State Objects
         let data = { transactions: [], bills: [], debts: [], debtPayments: [] };
         let charts = { expense: null, debt: null };
+        let currentTab = 'home';
 
         // iOS Safari Safe Date formatting
         function getTodayStr() {
@@ -268,54 +286,47 @@
         function genId() { return Date.now().toString(36) + Math.random().toString(36).substring(2); }
         function parseTags(str) { return str ? str.split(',').map(s => s.trim()).filter(s => s) : []; }
 
-        function toggleModal(id) {
+        function switchTab(tabId) {
             try {
-                const el = document.getElementById(id);
-                if(el) el.classList.toggle('hidden');
-            } catch(e) { alert("Modal Error: " + e.message); }
+                // Hide all views
+                ['home', 'transactions', 'bills', 'debt', 'settings'].forEach(id => {
+                    document.getElementById('view-' + id).classList.add('hidden');
+                    document.getElementById('view-' + id).classList.remove('block');
+                    
+                    // Reset nav styling
+                    const navBtn = document.getElementById('nav-' + id);
+                    navBtn.classList.remove('text-indigo-400');
+                    navBtn.classList.add('text-slate-500');
+                });
+
+                // Show target view
+                document.getElementById('view-' + tabId).classList.remove('hidden');
+                document.getElementById('view-' + tabId).classList.add('block');
+                
+                // Highlight active nav
+                const activeNavBtn = document.getElementById('nav-' + tabId);
+                activeNavBtn.classList.remove('text-slate-500');
+                activeNavBtn.classList.add('text-indigo-400');
+                
+                currentTab = tabId;
+
+                // Redraw charts if entering home
+                if(tabId === 'home') drawCharts();
+            } catch(e) { alert("Tab Switch Error: " + e.message); }
         }
 
         function saveState() {
             try {
                 localStorage.setItem('fintrack_ios_data', JSON.stringify(data));
                 updateUI();
-            } catch (e) { alert("Storage Save Error (Are you in Private Mode?): " + e.message); }
+            } catch (e) { alert("Storage Save Error: " + e.message); }
         }
 
         function loadMockData() {
             try {
-                const today = getTodayStr();
-                data.transactions = [
-                    { id: genId(), type: 'income', amount: 3750.00, category: 'JP CHECK 1', date: today, tags: [] },
-                    { id: genId(), type: 'income', amount: 2875.00, category: 'EJP CHECK 1', date: today, tags: [] },
-                    { id: genId(), type: 'expense', amount: 561.00, category: 'SAVINGS', date: today, tags: ['savings'] },
-                    { id: genId(), type: 'expense', amount: 561.00, category: 'SAVINGS', date: today, tags: ['savings'] },
-                    { id: genId(), type: 'expense', amount: 442.00, category: 'Spending', date: today, tags: ['spending'] }
-                ];
-
-                data.bills = [
-                    { id: genId(), name: 'Netflix + Kindle', amount: 30.00, dueDate: today, isPaid: false, tags: [] },
-                    { id: genId(), name: 'Cell Phone - JP', amount: 120.00, dueDate: today, isPaid: false, tags: [] },
-                    { id: genId(), name: 'Kojak + Koda', amount: 121.00, dueDate: today, isPaid: false, tags: [] },
-                    { id: genId(), name: 'Insurance - life', amount: 163.00, dueDate: today, isPaid: false, tags: [] },
-                    { id: genId(), name: 'Roth savings', amount: 115.00, dueDate: today, isPaid: false, tags: [] },
-                    { id: genId(), name: 'Gas', amount: 80.00, dueDate: today, isPaid: false, tags: [] },
-                    { id: genId(), name: 'Insurance - car', amount: 225.00, dueDate: today, isPaid: false, tags: [] },
-                    { id: genId(), name: 'Gym', amount: 38.00, dueDate: today, isPaid: false, tags: [] },
-                    { id: genId(), name: 'Food', amount: 400.00, dueDate: today, isPaid: false, tags: [] },
-                    { id: genId(), name: 'House', amount: 1540.00, dueDate: today, isPaid: false, tags: [] },
-                    { id: genId(), name: 'Savings', amount: 678.00, dueDate: today, isPaid: false, tags: [] },
-                    { id: genId(), name: 'Car', amount: 611.00, dueDate: today, isPaid: false, tags: [] },
-                    { id: genId(), name: 'Credit Cards', amount: 300.00, dueDate: today, isPaid: false, tags: [] },
-                    { id: genId(), name: 'Christmas', amount: 150.00, dueDate: today, isPaid: false, tags: [] },
-                    { id: genId(), name: 'Redbud Roundup', amount: 490.00, dueDate: today, isPaid: false, tags: [] }
-                ];
-                
-                // Add debts based on bills to ensure chart works
-                data.debts = [
-                    { id: genId(), name: 'House', balance: 250000, apr: 5, payment: 1540 },
-                    { id: genId(), name: 'Car', balance: 25000, apr: 6, payment: 611 }
-                ];
+                data.transactions = [];
+                data.bills = [];
+                data.debts = [];
                 data.debtPayments = [];
                 saveState();
             } catch(e) { alert("Mock Data Error: " + e.message); }
@@ -328,7 +339,6 @@
                 const saved = localStorage.getItem('fintrack_ios_data');
                 if (saved) {
                     data = JSON.parse(saved);
-                    // Handle legacy data structure safety
                     if(!data.transactions) data.transactions = [];
                     if(!data.bills) data.bills = [];
                     if(!data.debts) data.debts = [];
@@ -337,6 +347,7 @@
                     loadMockData(); // Initial load if completely empty
                 }
                 updateUI();
+                switchTab('home'); // Default to home view
             } catch(e) { 
                 alert("Init Error: " + e.message); 
                 data = { transactions: [], bills: [], debts: [], debtPayments: [] }; // Reset safety
@@ -403,14 +414,16 @@
         function updateUI() {
             try {
                 // Dashboard Logic
-                let inc = 0, exp = 0, unp = 0;
+                let inc = 0, exp = 0, unp = 0, totDebt = 0;
                 data.transactions.forEach(t => t.type === 'income' ? inc += t.amount : exp += t.amount);
                 data.bills.forEach(b => b.isPaid ? exp += b.amount : unp += b.amount);
+                data.debts.forEach(d => totDebt += d.balance);
                 
                 dom.sInc.textContent = formatC(inc);
                 dom.sExp.textContent = formatC(exp);
                 dom.sUnp.textContent = formatC(unp);
-                dom.sBal.textContent = formatC(inc - exp); // Balance strictly Income minus (Expenses + Paid Bills)
+                dom.sBal.textContent = formatC(inc - exp);
+                dom.sDebt.textContent = formatC(totDebt);
 
                 // Render Transactions
                 dom.listT.innerHTML = data.transactions.length ? data.transactions.slice().sort((a,b)=>safeDateParse(b.date)-safeDateParse(a.date)).map(t => `
@@ -422,7 +435,7 @@
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="font-bold ${t.type==='income'?'text-emerald-400':'text-rose-400'}">${t.type==='income'?'+':'-'}${formatC(t.amount)}</span>
-                            <button onclick="delTrans('${t.id}')" class="text-slate-500"><i class="fa-solid fa-trash"></i></button>
+                            <button onclick="delTrans('${t.id}')" class="text-slate-500 hover:text-rose-400 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </li>
                 `).join('') : '<li class="p-3 text-center text-xs text-slate-500">No transactions</li>';
@@ -431,7 +444,7 @@
                 dom.listB.innerHTML = data.bills.length ? data.bills.slice().sort((a,b)=>a.isPaid-b.isPaid || safeDateParse(a.dueDate)-safeDateParse(b.dueDate)).map(b => `
                     <div class="bg-slate-800 border ${b.isPaid?'border-emerald-900/50 bg-emerald-900/10':'border-slate-700'} p-3 rounded-lg flex justify-between items-center">
                         <div class="flex gap-2 items-center">
-                            <button onclick="toggleBill('${b.id}')" class="w-6 h-6 rounded border ${b.isPaid?'bg-emerald-500 border-emerald-500 text-white':'border-slate-500 text-transparent'} flex items-center justify-center"><i class="fa-solid fa-check text-[10px]"></i></button>
+                            <button onclick="toggleBill('${b.id}')" class="w-8 h-8 shrink-0 rounded border ${b.isPaid?'bg-emerald-500 border-emerald-500 text-white':'border-slate-500 text-transparent'} flex items-center justify-center transition-colors"><i class="fa-solid fa-check text-xs"></i></button>
                             <div>
                                 <p class="text-sm font-bold ${b.isPaid?'text-slate-500 line-through':'text-white'}">${b.name}</p>
                                 <p class="text-xs text-slate-400">${b.isPaid?'Paid':'Due'}: ${formatD(b.dueDate)}</p>
@@ -439,7 +452,7 @@
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="font-bold text-sm text-slate-200">${formatC(b.amount)}</span>
-                            <button onclick="delBill('${b.id}')" class="text-slate-500"><i class="fa-solid fa-xmark"></i></button>
+                            <button onclick="delBill('${b.id}')" class="text-slate-500 hover:text-rose-400 px-2 py-1"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     </div>
                 `).join('') : '<p class="text-center text-xs text-slate-500 p-3">No bills</p>';
@@ -454,7 +467,7 @@
                             <p class="text-sm font-bold text-white">${d.name}</p>
                             <p class="text-xs text-slate-400">Bal: ${formatC(d.balance)} | ${d.apr}% APR</p>
                         </div>
-                        <button onclick="delDebt('${d.id}')" class="text-slate-500"><i class="fa-solid fa-trash"></i></button>
+                        <button onclick="delDebt('${d.id}')" class="text-slate-500 hover:text-rose-400 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                     </div>`;
                 }).join('') : '<p class="text-center text-xs text-slate-500 p-3">No debts</p>';
 
@@ -465,7 +478,7 @@
                     </div>
                 `).join('') : '<p class="text-center text-xs text-slate-500 p-3">No payments logged</p>';
 
-                drawCharts();
+                if(currentTab === 'home') drawCharts();
                 handleForecast();
             } catch(e) { alert("UI Update Error: " + e.message); }
         }
@@ -477,7 +490,6 @@
                 data.transactions.forEach(t => t.type === 'income' ? inc += t.amount : exp += t.amount);
                 data.bills.forEach(b => { if(b.isPaid) exp += b.amount; });
                 
-                // Assume the data covers approx 1 month for simple forecasting on local app
                 let net = inc - exp;
                 let future = net + (net * months);
                 document.getElementById('forecast-result').textContent = formatC(future);
@@ -486,10 +498,9 @@
 
         function drawCharts() {
             try {
-                if(typeof Chart === 'undefined') return; // Safe check
+                if(typeof Chart === 'undefined') return;
                 Chart.defaults.color = '#94a3b8';
                 
-                // Expense Doughnut
                 const ctxEx = document.getElementById('expenseChart');
                 let exData = {}, hasEx = false;
                 data.transactions.filter(t=>t.type==='expense').forEach(t => { exData[t.category] = (exData[t.category]||0)+t.amount; hasEx=true; });
@@ -507,25 +518,20 @@
                     document.getElementById('empty-chart').classList.remove('hidden');
                 }
 
-                // Debt Burn down
+                // Debt Chart Logic
                 const ctxDebt = document.getElementById('debtChart');
-                if(data.debts.length > 0) {
+                let debtData = {}, hasDebt = false;
+                data.debts.filter(d => d.balance > 0).forEach(d => {
+                    debtData[d.name] = d.balance;
+                    hasDebt = true;
+                });
+
+                if (hasDebt) {
                     document.getElementById('empty-debt-chart').classList.add('hidden');
                     if(charts.debt) charts.debt.destroy();
-                    
-                    let datasets = [];
-                    data.debts.forEach((d,i) => {
-                        let bal = d.balance, rate = d.apr/100/12, pmt = d.payment;
-                        let proj = [bal];
-                        if(pmt > bal*rate) {
-                            for(let m=0; m<24 && bal>0; m++) { bal = bal + (bal*rate) - pmt; if(bal<0) bal=0; proj.push(bal); }
-                        }
-                        datasets.push({ label: d.name, data: proj, borderColor: ['#fb7185','#f43f5e','#e11d48'][i%3], tension: 0.2 });
-                    });
-                    
                     charts.debt = new Chart(ctxDebt, {
-                        type: 'line', data: { labels: Array.from({length:25}, (_,i)=>i), datasets },
-                        options: { responsive: true, maintainAspectRatio: false, scales: { x:{display:false} }, plugins: { legend: { labels:{boxWidth: 10, font:{size: 10}} } } }
+                        type: 'doughnut', data: { labels: Object.keys(debtData), datasets: [{ data: Object.values(debtData), backgroundColor: ['#f43f5e', '#fb923c', '#fbbf24', '#a3e635', '#2dd4bf', '#818cf8'], borderColor: '#0f172a', borderWidth: 2 }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels:{boxWidth: 10, font:{size: 10}} } } }
                     });
                 } else {
                     if(charts.debt) charts.debt.destroy();
@@ -534,33 +540,128 @@
             } catch(e) { /* silent fail for charts is fine */ }
         }
 
-        function exportToPDF() {
+        function exportToCSV() {
             try {
-                toggleModal('share-modal');
-                const element = document.getElementById('pdf-content-area');
-                element.classList.add('pdf-export-mode');
-                html2pdf().set({ margin: 0.2, filename: 'FinTrack.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, backgroundColor: '#0f172a' }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).from(element).save().then(() => {
-                    element.classList.remove('pdf-export-mode');
-                });
-            } catch(e) { alert("PDF Error: " + e.message); }
+                // Constructing CSV data format cleanly
+                let csvContent = "Category,Type,Amount,Date,Status/Details\n";
+                
+                // Transactions
+                csvContent += "\n--- TRANSACTIONS ---\n";
+                if(data.transactions && data.transactions.length > 0) {
+                    data.transactions.forEach(t => {
+                        const tags = t.tags.length > 0 ? `Tags: ${t.tags.join(', ')}` : "";
+                        csvContent += `"${t.category}","${t.type === 'income' ? 'Income' : 'Expense'}","${t.amount}","${t.date}","${tags}"\n`;
+                    });
+                } else { csvContent += ",No Transactions Logged,,,\n"; }
+
+                // Bills
+                csvContent += "\n--- BILLS ---\n";
+                if(data.bills && data.bills.length > 0) {
+                    data.bills.forEach(b => {
+                        const tags = b.tags.length > 0 ? `Tags: ${b.tags.join(', ')}` : "";
+                        const status = b.isPaid ? 'Paid' : 'Unpaid';
+                        csvContent += `"${b.name}","Bill","${b.amount}","Due: ${b.dueDate}","Status: ${status} | ${tags}"\n`;
+                    });
+                } else { csvContent += ",No Bills Logged,,,\n"; }
+
+                // Debts
+                csvContent += "\n--- DEBT PLANNER ---\n";
+                if(data.debts && data.debts.length > 0) {
+                    data.debts.forEach(d => {
+                        csvContent += `"${d.name}","Debt Balance","${d.balance}","APR: ${d.apr}%","Monthly Pmt: $${d.payment}"\n`;
+                    });
+                } else { csvContent += ",No Debts Tracked,,,\n"; }
+
+                // Debt Payments
+                csvContent += "\n--- DEBT PAYMENTS ---\n";
+                if(data.debtPayments && data.debtPayments.length > 0) {
+                    data.debtPayments.forEach(p => {
+                        csvContent += `"${p.debtName}","Payment","${p.amount}","${p.date}",""\n`;
+                    });
+                } else { csvContent += ",No Payments Logged,,,\n"; }
+
+                // Create and trigger CSV download
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.setAttribute('download', 'FinTrack_Data.csv');
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+            } catch (e) {
+                alert("CSV Export Error: " + e.message);
+            }
         }
 
-        function generateSync() {
+        function importFromCSV(event) {
             try {
-                document.getElementById('sync-code').value = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-            } catch(e) { alert("Sync Gen Error: " + e.message); }
-        }
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const text = e.target.result;
+                        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                        let currentSection = '';
+                        let newData = { transactions: [], bills: [], debts: [], debtPayments: [] };
 
-        function importSync() {
-            try {
-                const str = document.getElementById('sync-code').value.trim();
-                if(!str) return;
-                const parsed = JSON.parse(decodeURIComponent(escape(atob(str))));
-                if(parsed.transactions) {
-                    data = parsed; saveState(); toggleModal('share-modal');
-                    alert("Import successful!");
-                }
-            } catch(e) { alert("Import Error: Invalid code"); }
+                        lines.forEach(line => {
+                            if (line.includes('--- TRANSACTIONS ---')) { currentSection = 'transactions'; return; }
+                            if (line.includes('--- BILLS ---')) { currentSection = 'bills'; return; }
+                            if (line.includes('--- DEBT PLANNER ---')) { currentSection = 'debts'; return; }
+                            if (line.includes('--- DEBT PAYMENTS ---')) { currentSection = 'debtPayments'; return; }
+                            if (line.startsWith('Category,Type,Amount') || line === '') return;
+                            if (!currentSection) return;
+
+                            // Safely split CSV respecting quotes
+                            const colsMatch = line.match(/(?:\"([^\"]*)\")|([^\,]+)/g);
+                            if(!colsMatch) return;
+                            const cols = colsMatch.map(s => s.replace(/^"|"$/g, '').trim());
+                            
+                            if (cols.length < 3 || cols[1] === "No Transactions Logged" || cols[1] === "No Bills Logged" || cols[1] === "No Debts Tracked" || cols[1] === "No Payments Logged") return;
+
+                            if (currentSection === 'transactions') {
+                                let tags = [];
+                                if(cols[4] && cols[4].includes('Tags: ')) tags = parseTags(cols[4].replace('Tags: ', ''));
+                                newData.transactions.push({ id: genId(), category: cols[0], type: cols[1].toLowerCase() === 'income' ? 'income' : 'expense', amount: parseFloat(cols[2]) || 0, date: cols[3], tags: tags });
+                            } 
+                            else if (currentSection === 'bills') {
+                                let isPaid = false, tags = [];
+                                if (cols[4]) {
+                                    if (cols[4].includes('Status: Paid')) isPaid = true;
+                                    const tagMatch = cols[4].match(/Tags: (.*)/);
+                                    if (tagMatch) tags = parseTags(tagMatch[1]);
+                                }
+                                newData.bills.push({ id: genId(), name: cols[0], amount: parseFloat(cols[2]) || 0, dueDate: cols[3].replace('Due: ', ''), tags: tags, isPaid: isPaid });
+                            } 
+                            else if (currentSection === 'debts') {
+                                let apr = parseFloat(cols[3].replace('APR: ', '').replace('%', ''));
+                                let pmt = parseFloat(cols[4].replace('Monthly Pmt: $', ''));
+                                newData.debts.push({ id: genId(), name: cols[0], balance: parseFloat(cols[2]) || 0, apr: isNaN(apr) ? 0 : apr, payment: isNaN(pmt) ? 0 : pmt });
+                            } 
+                            else if (currentSection === 'debtPayments') {
+                                let debtName = cols[0];
+                                let matchingDebt = newData.debts.find(d => d.name === debtName);
+                                newData.debtPayments.push({ id: genId(), debtId: matchingDebt ? matchingDebt.id : genId(), debtName: debtName, amount: parseFloat(cols[2]) || 0, date: cols[3] });
+                            }
+                        });
+
+                        data = newData;
+                        saveState();
+                        alert("Data imported successfully!");
+                        document.getElementById('csv-upload').value = ''; // Reset input
+                    } catch (err) {
+                        alert("Import parsing error: " + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            } catch (err) {
+                alert("File access error: " + err.message);
+            }
         }
 
         // Start App securely
