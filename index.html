@@ -43,9 +43,10 @@
         .rounded-xl { border-radius: 0.75rem; }
         .rounded-t-xl { border-top-left-radius: 0.75rem; border-top-right-radius: 0.75rem; }
         
-        /* Safe Area Padding for iOS Bottom Bar */
-        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-        .pt-safe { padding-top: max(env(safe-area-inset-top), 1rem); }
+        /* Safe Area Padding for iOS Bottom Bar & Notch */
+        /* Increased padding to ensure clearance on newer iPhones */
+        .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 20px); }
+        .pt-safe { padding-top: calc(env(safe-area-inset-top) + 28px); }
         .drag-handle { touch-action: none; cursor: grab; }
         .drag-handle:active { cursor: grabbing; }
     </style>
@@ -59,7 +60,7 @@
         </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto p-3 md:p-6 pb-24" id="main-scroll-container">
+    <main class="flex-1 overflow-y-auto p-3 md:p-6 pb-32" id="main-scroll-container">
         
         <div id="view-home" class="space-y-6 max-w-6xl mx-auto block">
             
