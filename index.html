@@ -516,6 +516,37 @@
             }
         }
 
+        function editValue(type, id, field, label) {
+            try {
+                let list;
+                if(type === 't') list = data.transactions;
+                else if(type === 'b') list = data.bills;
+                else if(type === 'd') list = data.debts;
+                else if(type === 's') list = data.savings;
+                else return;
+
+                const item = list.find(x => x.id === id);
+                if(!item) return;
+
+                let currentVal = item[field];
+                let newVal = prompt(`Enter new ${label}:`, currentVal);
+                if(newVal === null) return; // Cancelled
+                newVal = newVal.trim();
+                if(newVal === '') return;
+
+                if(['amount', 'balance', 'apy', 'contribution', 'apr', 'payment'].includes(field)) {
+                    newVal = parseFloat(newVal);
+                    if(isNaN(newVal)) return alert("Please enter a valid number!");
+                } else if(field === 'day' || field === 'dueDate') {
+                    newVal = parseInt(newVal);
+                    if(isNaN(newVal) || newVal < 1 || newVal > 31) return alert("Please enter a valid day (1-31)!");
+                }
+
+                item[field] = newVal;
+                saveState();
+            } catch (e) { alert("Edit Error: " + e.message); }
+        }
+
         function handleAddTransaction(e) {
             try {
                 e.preventDefault();
@@ -681,13 +712,13 @@
                             <input type="checkbox" onchange="toggleSelectT('${t.id}', this.checked)" ${selectedT.has(t.id)?'checked':''} class="w-4 h-4 mr-3 rounded border-slate-600 bg-slate-900 accent-indigo-500">
                             <i class="fa-solid fa-grip-vertical text-slate-600 mr-3 drag-handle"></i>
                             <div>
-                                <p class="text-sm font-bold text-white">${t.category}</p>
+                                <p class="text-sm font-bold text-white cursor-pointer active:opacity-50" onclick="editValue('t', '${t.id}', 'category', 'Category')">${t.category} <i class="fa-solid fa-pencil text-[8px] text-slate-500 opacity-50 ml-1"></i></p>
                                 <p class="text-xs text-slate-400">${formatD(t.day || t.date)}</p>
                                 ${renderTags(t.tags)}
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
-                            <span class="font-bold ${t.type==='income'?'text-emerald-400':'text-rose-400'}">${t.type==='income'?'+':'-'}${formatC(t.amount)}</span>
+                            <span class="font-bold cursor-pointer active:opacity-50 ${t.type==='income'?'text-emerald-400':'text-rose-400'}" onclick="editValue('t', '${t.id}', 'amount', 'Amount')">${t.type==='income'?'+':'-'}${formatC(t.amount)}</span>
                             <button onclick="delTrans('${t.id}')" class="text-slate-500 hover:text-rose-400 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </li>
@@ -704,12 +735,12 @@
                             <i class="fa-solid fa-grip-vertical text-slate-600 mr-2 drag-handle"></i>
                             <button onclick="toggleBill('${b.id}')" class="w-8 h-8 shrink-0 rounded border ${b.isPaid?'bg-emerald-500 border-emerald-500 text-white':'border-slate-500 text-transparent'} flex items-center justify-center transition-colors"><i class="fa-solid fa-check text-xs"></i></button>
                             <div>
-                                <p class="text-sm font-bold ${b.isPaid?'text-slate-500 line-through':'text-white'}">${b.name}</p>
+                                <p class="text-sm font-bold cursor-pointer active:opacity-50 ${b.isPaid?'text-slate-500 line-through':'text-white'}" onclick="editValue('b', '${b.id}', 'name', 'Bill Name')">${b.name} <i class="fa-solid fa-pencil text-[8px] text-slate-500 opacity-50 ml-1"></i></p>
                                 <p class="text-xs text-slate-400">${b.isPaid?'Paid':'Due'}: ${formatD(b.day || b.dueDate)}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
-                            <span class="font-bold text-sm text-slate-200">${formatC(b.amount)}</span>
+                            <span class="font-bold text-sm text-slate-200 cursor-pointer active:opacity-50" onclick="editValue('b', '${b.id}', 'amount', 'Amount')">${formatC(b.amount)}</span>
                             <button onclick="delBill('${b.id}')" class="text-slate-500 hover:text-rose-400 px-2 py-1"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     </div>
@@ -728,11 +759,11 @@
                 if(dom.listS) dom.listS.innerHTML = sortedS.length ? sortedS.map(s => `
                     <li class="p-3 bg-slate-800 rounded-lg border border-slate-700 flex justify-between items-center" data-id="${s.id}">
                         <div>
-                            <div class="text-sm font-bold text-white">${s.name} <span class="text-cyan-400 text-xs ml-2">${s.apy}% APY</span></div>
+                            <div class="text-sm font-bold text-white"><span class="cursor-pointer active:opacity-50" onclick="editValue('s', '${s.id}', 'name', 'Goal Name')">${s.name}</span> <span class="text-cyan-400 text-xs ml-2 cursor-pointer active:opacity-50" onclick="editValue('s', '${s.id}', 'apy', 'APY')">${s.apy}% APY <i class="fa-solid fa-pencil text-[8px] opacity-50"></i></span></div>
                             <div class="text-xs text-slate-400 mt-1">Goal: ${formatC(s.contribution)}/mo</div>
                         </div>
                         <div class="text-right">
-                            <div class="text-sm font-bold text-white mb-1">${formatC(s.balance)}</div>
+                            <div class="text-sm font-bold text-white mb-1 cursor-pointer active:opacity-50" onclick="editValue('s', '${s.id}', 'balance', 'Balance')">${formatC(s.balance)}</div>
                             <button onclick="delSavings('${s.id}')" class="text-rose-400 hover:text-rose-300 text-xs"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </li>
@@ -762,8 +793,8 @@
                         <div class="flex items-center">
                             <i class="fa-solid fa-grip-vertical text-slate-600 mr-3 drag-handle"></i>
                             <div>
-                                <p class="text-sm font-bold text-white">${d.name}</p>
-                                <p class="text-xs text-slate-400">Bal: ${formatC(d.balance)} | ${d.apr}% APR</p>
+                                <p class="text-sm font-bold text-white cursor-pointer active:opacity-50" onclick="editValue('d', '${d.id}', 'name', 'Debt Name')">${d.name} <i class="fa-solid fa-pencil text-[8px] text-slate-500 opacity-50 ml-1"></i></p>
+                                <p class="text-xs text-slate-400"><span class="cursor-pointer active:opacity-50" onclick="editValue('d', '${d.id}', 'balance', 'Balance')">Bal: ${formatC(d.balance)}</span> | <span class="cursor-pointer active:opacity-50" onclick="editValue('d', '${d.id}', 'apr', 'APR')">${d.apr}% APR</span></p>
                             </div>
                         </div>
                         <button onclick="delDebt('${d.id}')" class="text-slate-500 hover:text-rose-400 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
