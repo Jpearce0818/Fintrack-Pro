@@ -328,7 +328,11 @@
             <i class="fa-solid fa-right-left mb-1 text-lg"></i><span class="text-[10px] font-bold">Transacts</span>
         </button>
         <button onclick="switchTab('bills')" id="nav-bills" class="flex-1 pt-3 pb-1 flex flex-col items-center text-slate-500 transition-colors">
-            <i class="fa-solid fa-file-invoice mb-1 text-lg"></i><span class="text-[10px] font-bold">Bills</span>
+            <div class="relative">
+                <i class="fa-solid fa-file-invoice mb-1 text-lg"></i>
+                <span id="nav-badge-bills" class="hidden absolute -top-1.5 -right-3 bg-rose-500 text-white text-[9px] font-bold px-1.5 rounded-full border border-slate-800 shadow-md">0</span>
+            </div>
+            <span class="text-[10px] font-bold mt-1">Bills</span>
         </button>
         <button onclick="switchTab('debt')" id="nav-debt" class="flex-1 pt-3 pb-1 flex flex-col items-center text-slate-500 transition-colors">
             <i class="fa-solid fa-credit-card mb-1 text-lg"></i><span class="text-[10px] font-bold">Debt</span>
@@ -359,7 +363,7 @@
                 dpId: document.getElementById('dp-id'), dpAmt: document.getElementById('dp-amt'),
                 listT: document.getElementById('list-transactions'), listB: document.getElementById('list-bills'), listD: document.getElementById('list-debts'), listDP: document.getElementById('list-debt-payments'), listS: document.getElementById('list-savings'), listSC: document.getElementById('list-savings-contrib'),
                 sBal: document.getElementById('stat-balance'), sInc: document.getElementById('stat-income'), sExp: document.getElementById('stat-expenses'), sUnp: document.getElementById('stat-unpaid'),
-                sDebt: document.getElementById('stat-debt'), sSavings: document.getElementById('s-tot-savings'), sName: document.getElementById('sv-name'), svBal: document.getElementById('sv-bal'), sApy: document.getElementById('sv-apy'), sContrib: document.getElementById('sv-contrib'), scId: document.getElementById('sc-id'), scAmt: document.getElementById('sc-amt'), scDay: document.getElementById('sc-day')
+                sDebt: document.getElementById('stat-debt'), sSavings: document.getElementById('s-tot-savings'), sName: document.getElementById('sv-name'), svBal: document.getElementById('sv-bal'), sApy: document.getElementById('sv-apy'), sContrib: document.getElementById('sv-contrib'), scId: document.getElementById('sc-id'), scAmt: document.getElementById('sc-amt'), scDay: document.getElementById('sc-day'), alertCont: document.getElementById('bill-alerts-container'), navBadgeBills: document.getElementById('nav-badge-bills')
             };
         } catch(e) { alert("DOM Init Error: " + e.message); }
 
@@ -690,6 +694,56 @@
                 const subS = document.getElementById('subtotal-s');
                 if(subS) subS.textContent = `(${formatC(totSavings)})`;
                 dom.sDebt.textContent = formatC(totDebt);
+
+                // Notifications Logic
+                const todayDay = new Date().getDate();
+                let upcomingB = [], overdueB = [];
+                (data.bills||[]).forEach(b => {
+                    if(!b.isPaid) {
+                        if(b.day < todayDay) overdueB.push(b);
+                        else if(b.day <= todayDay + 3) upcomingB.push(b);
+                    }
+                });
+                
+                const alertCount = upcomingB.length + overdueB.length;
+                if(dom.navBadgeBills) {
+                    if(alertCount > 0) {
+                        dom.navBadgeBills.textContent = alertCount;
+                        dom.navBadgeBills.classList.remove('hidden');
+                    } else {
+                        dom.navBadgeBills.classList.add('hidden');
+                    }
+                }
+
+                if(dom.alertCont) {
+                    let alertHtml = '';
+                    if(overdueB.length > 0) {
+                        alertHtml += `<div class="bg-rose-900/40 border border-rose-500/50 rounded-xl p-3 mb-3 flex items-center justify-between shadow-lg shadow-rose-900/20 cursor-pointer active:opacity-50" onclick="switchTab('bills')">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-rose-500/20 flex items-center justify-center shrink-0"><i class="fa-solid fa-circle-exclamation text-rose-500 text-lg"></i></div>
+                                <div>
+                                    <p class="text-sm font-bold text-white">${overdueB.length} Overdue Bill${overdueB.length>1?'s':''}</p>
+                                    <p class="text-[10px] text-rose-200 truncate w-48">${overdueB.map(b=>b.name).join(', ')}</p>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-rose-400 opacity-50"></i>
+                        </div>`;
+                    }
+                    if(upcomingB.length > 0) {
+                        alertHtml += `<div class="bg-amber-900/40 border border-amber-500/50 rounded-xl p-3 mb-3 flex items-center justify-between shadow-lg shadow-amber-900/20 cursor-pointer active:opacity-50" onclick="switchTab('bills')">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0"><i class="fa-solid fa-clock text-amber-500 text-lg"></i></div>
+                                <div>
+                                    <p class="text-sm font-bold text-white">${upcomingB.length} Upcoming Bill${upcomingB.length>1?'s':''}</p>
+                                    <p class="text-[10px] text-amber-200 truncate w-48">Due soon: ${upcomingB.map(b=>b.name).join(', ')}</p>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-amber-400 opacity-50"></i>
+                        </div>`;
+                    }
+                    dom.alertCont.innerHTML = alertHtml;
+                }
+
 
                 const tNet = data.transactions.reduce((acc, t) => t.type === 'income' ? acc + t.amount : acc - t.amount, 0);
                 const bTot = data.bills.reduce((acc, b) => acc + b.amount, 0);
