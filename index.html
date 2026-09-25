@@ -10,6 +10,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     
     <script>
         tailwind.config = {
@@ -44,11 +45,14 @@
         
         /* Safe Area Padding for iOS Bottom Bar */
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        .pt-safe { padding-top: max(env(safe-area-inset-top), 1rem); }
+        .drag-handle { touch-action: none; cursor: grab; }
+        .drag-handle:active { cursor: grabbing; }
     </style>
 </head>
 <body class="text-slate-300 bg-slate-900 h-screen flex flex-col overflow-hidden">
 
-    <header class="bg-slate-800 border-b border-slate-700 px-4 py-3 flex items-center justify-between flex-shrink-0 z-10 shadow-md">
+    <header class="bg-slate-800 border-b border-slate-700 px-4 py-3 pt-safe flex items-center justify-between flex-shrink-0 z-10 shadow-md">
         <div class="flex items-center gap-2">
             <div class="bg-indigo-500 text-white p-2 rounded-lg"><i class="fa-solid fa-wallet"></i></div>
             <h1 class="text-lg font-bold text-white tracking-tight">FinTrack iOS</h1>
@@ -138,7 +142,15 @@
             </section>
             
             <section class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[400px]">
-                <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl"><h3 class="text-sm font-bold text-white"><i class="fa-solid fa-list text-indigo-400 mr-2"></i>Transactions Ledger</h3></div>
+                <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-list text-indigo-400 mr-2"></i>Transactions Ledger</h3>
+                    <select id="sort-t" onchange="changeSort('t', this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1 outline-none">
+                        <option value="date-desc">Date (Newest)</option>
+                        <option value="date-asc">Date (Oldest)</option>
+                        <option value="amt-desc">Amount (High)</option>
+                        <option value="custom">Custom Order</option>
+                    </select>
+                </div>
                 <div class="flex-1 overflow-y-auto hide-scroll p-0"><ul id="list-transactions" class="divide-y divide-slate-700/50"></ul></div>
             </section>
         </div>
@@ -158,7 +170,14 @@
             </section>
 
             <section class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[400px]">
-                <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl"><h3 class="text-sm font-bold text-white"><i class="fa-solid fa-file-invoice text-amber-400 mr-2"></i>Upcoming Bills</h3></div>
+                <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-file-invoice text-amber-400 mr-2"></i>Upcoming Bills</h3>
+                    <select id="sort-b" onchange="changeSort('b', this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1 outline-none">
+                        <option value="date-asc">Due Date</option>
+                        <option value="status">Status (Unpaid First)</option>
+                        <option value="custom">Custom Order</option>
+                    </select>
+                </div>
                 <div class="flex-1 overflow-y-auto hide-scroll p-3 bg-slate-900/30"><div id="list-bills" class="space-y-2"></div></div>
             </section>
         </div>
@@ -191,7 +210,14 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[250px]">
-                    <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl"><h3 class="text-sm font-bold text-white"><i class="fa-solid fa-list text-rose-400 mr-2"></i>Active Debts</h3></div>
+                    <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-list text-rose-400 mr-2"></i>Active Debts</h3>
+                        <select id="sort-d" onchange="changeSort('d', this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1 outline-none">
+                            <option value="bal-desc">Balance (High)</option>
+                            <option value="name">Name (A-Z)</option>
+                            <option value="custom">Custom Order</option>
+                        </select>
+                    </div>
                     <div class="flex-1 overflow-y-auto p-3 hide-scroll bg-slate-900/30"><div id="list-debts" class="space-y-2"></div></div>
                 </div>
                 <div class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[250px]">
@@ -267,6 +293,7 @@
         let data = { transactions: [], bills: [], debts: [], debtPayments: [] };
         let charts = { expense: null, debt: null };
         let currentTab = 'home';
+        let sortPrefs = { t: 'date-desc', b: 'date-asc', d: 'bal-desc' };
 
         // iOS Safari Safe Date formatting
         function getTodayStr() {
@@ -285,6 +312,33 @@
         function formatC(num) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num || 0); }
         function genId() { return Date.now().toString(36) + Math.random().toString(36).substring(2); }
         function parseTags(str) { return str ? str.split(',').map(s => s.trim()).filter(s => s) : []; }
+
+        function changeSort(type, val) { sortPrefs[type] = val; updateUI(); }
+        
+        function initSortable(el, dataKey, sortKey) {
+            if (!el) return;
+            if (window['sortable_' + dataKey]) window['sortable_' + dataKey].destroy();
+            if (typeof Sortable !== 'undefined') {
+                window['sortable_' + dataKey] = Sortable.create(el, {
+                    handle: '.drag-handle',
+                    animation: 150,
+                    onEnd: function (evt) {
+                        const newOrderIds = Array.from(el.children).map(child => child.getAttribute('data-id'));
+                        const newArray = [];
+                        newOrderIds.forEach(id => {
+                            const found = data[dataKey].find(item => item.id === id);
+                            if(found) newArray.push(found);
+                        });
+                        data[dataKey] = newArray;
+                        
+                        // Switch sort preference to custom so it doesn't snap back
+                        document.getElementById('sort-' + sortKey).value = 'custom';
+                        sortPrefs[sortKey] = 'custom';
+                        saveState();
+                    }
+                });
+            }
+        }
 
         function switchTab(tabId) {
             try {
@@ -425,13 +479,20 @@
                 dom.sBal.textContent = formatC(inc - exp);
                 dom.sDebt.textContent = formatC(totDebt);
 
-                // Render Transactions
-                dom.listT.innerHTML = data.transactions.length ? data.transactions.slice().sort((a,b)=>safeDateParse(b.date)-safeDateParse(a.date)).map(t => `
-                    <li class="p-3 flex justify-between items-center">
-                        <div>
-                            <p class="text-sm font-bold text-white">${t.category}</p>
-                            <p class="text-xs text-slate-400">${formatD(t.date)}</p>
-                            ${renderTags(t.tags)}
+                let sortedT = [...data.transactions];
+                if (sortPrefs.t === 'date-desc') sortedT.sort((a,b)=>safeDateParse(b.date)-safeDateParse(a.date));
+                if (sortPrefs.t === 'date-asc') sortedT.sort((a,b)=>safeDateParse(a.date)-safeDateParse(b.date));
+                if (sortPrefs.t === 'amt-desc') sortedT.sort((a,b)=>b.amount-a.amount);
+
+                dom.listT.innerHTML = sortedT.length ? sortedT.map(t => `
+                    <li class="p-3 flex justify-between items-center bg-slate-800" data-id="${t.id}">
+                        <div class="flex items-center">
+                            <i class="fa-solid fa-grip-vertical text-slate-600 mr-3 drag-handle"></i>
+                            <div>
+                                <p class="text-sm font-bold text-white">${t.category}</p>
+                                <p class="text-xs text-slate-400">${formatD(t.date)}</p>
+                                ${renderTags(t.tags)}
+                            </div>
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="font-bold ${t.type==='income'?'text-emerald-400':'text-rose-400'}">${t.type==='income'?'+':'-'}${formatC(t.amount)}</span>
@@ -440,10 +501,14 @@
                     </li>
                 `).join('') : '<li class="p-3 text-center text-xs text-slate-500">No transactions</li>';
 
-                // Render Bills
-                dom.listB.innerHTML = data.bills.length ? data.bills.slice().sort((a,b)=>a.isPaid-b.isPaid || safeDateParse(a.dueDate)-safeDateParse(b.dueDate)).map(b => `
-                    <div class="bg-slate-800 border ${b.isPaid?'border-emerald-900/50 bg-emerald-900/10':'border-slate-700'} p-3 rounded-lg flex justify-between items-center">
+                let sortedB = [...data.bills];
+                if (sortPrefs.b === 'date-asc') sortedB.sort((a,b)=>safeDateParse(a.dueDate)-safeDateParse(b.dueDate));
+                if (sortPrefs.b === 'status') sortedB.sort((a,b)=>a.isPaid-b.isPaid);
+
+                dom.listB.innerHTML = sortedB.length ? sortedB.map(b => `
+                    <div class="bg-slate-800 border ${b.isPaid?'border-emerald-900/50 bg-emerald-900/10':'border-slate-700'} p-3 rounded-lg flex justify-between items-center" data-id="${b.id}">
                         <div class="flex gap-2 items-center">
+                            <i class="fa-solid fa-grip-vertical text-slate-600 mr-2 drag-handle"></i>
                             <button onclick="toggleBill('${b.id}')" class="w-8 h-8 shrink-0 rounded border ${b.isPaid?'bg-emerald-500 border-emerald-500 text-white':'border-slate-500 text-transparent'} flex items-center justify-center transition-colors"><i class="fa-solid fa-check text-xs"></i></button>
                             <div>
                                 <p class="text-sm font-bold ${b.isPaid?'text-slate-500 line-through':'text-white'}">${b.name}</p>
@@ -457,19 +522,31 @@
                     </div>
                 `).join('') : '<p class="text-center text-xs text-slate-500 p-3">No bills</p>';
 
-                // Render Debts
+                let sortedD = [...data.debts];
+                if (sortPrefs.d === 'bal-desc') sortedD.sort((a,b)=>b.balance-a.balance);
+                if (sortPrefs.d === 'name') sortedD.sort((a,b)=>a.name.localeCompare(b.name));
+
                 dom.dpId.innerHTML = '<option value="">-- Select Debt --</option>';
-                dom.listD.innerHTML = data.debts.length ? data.debts.map(d => {
+                dom.listD.innerHTML = sortedD.length ? sortedD.map(d => {
                     if(d.balance>0) dom.dpId.innerHTML += `<option value="${d.id}">${d.name} (${formatC(d.balance)})</option>`;
                     return `
-                    <div class="bg-slate-800 border border-slate-700 p-3 rounded-lg flex justify-between items-center">
-                        <div>
-                            <p class="text-sm font-bold text-white">${d.name}</p>
-                            <p class="text-xs text-slate-400">Bal: ${formatC(d.balance)} | ${d.apr}% APR</p>
+                    <div class="bg-slate-800 border border-slate-700 p-3 rounded-lg flex justify-between items-center" data-id="${d.id}">
+                        <div class="flex items-center">
+                            <i class="fa-solid fa-grip-vertical text-slate-600 mr-3 drag-handle"></i>
+                            <div>
+                                <p class="text-sm font-bold text-white">${d.name}</p>
+                                <p class="text-xs text-slate-400">Bal: ${formatC(d.balance)} | ${d.apr}% APR</p>
+                            </div>
                         </div>
                         <button onclick="delDebt('${d.id}')" class="text-slate-500 hover:text-rose-400 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
                     </div>`;
                 }).join('') : '<p class="text-center text-xs text-slate-500 p-3">No debts</p>';
+
+                setTimeout(() => {
+                    initSortable(dom.listT, 'transactions', 't');
+                    initSortable(document.getElementById('list-bills'), 'bills', 'b');
+                    initSortable(document.getElementById('list-debts'), 'debts', 'd');
+                }, 50);
 
                 // Render Debt Payments
                 dom.listDP.innerHTML = data.debtPayments.length ? data.debtPayments.slice().reverse().map(p => `
