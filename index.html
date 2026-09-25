@@ -56,7 +56,7 @@
     <header class="bg-slate-800 border-b border-slate-700 px-4 pb-3 pt-safe flex items-center justify-between flex-shrink-0 z-10 shadow-md">
         <div class="flex items-center gap-2">
             <div class="bg-indigo-500 text-white p-2 rounded-lg"><i class="fa-solid fa-wallet"></i></div>
-            <h1 class="text-lg font-bold text-white tracking-tight">FinTrack iOS</h1>
+            <h1 class="text-lg font-bold text-white tracking-tight">FinTrack <span id="header-month" class="text-sm font-normal text-indigo-300 ml-1"></span></h1>
         </div>
     </header>
 
@@ -135,7 +135,7 @@
                     </div>
                     <input type="text" id="t-cat" placeholder="Name (e.g. Salary)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
                     <div class="grid grid-cols-2 gap-3">
-                        <input type="date" id="t-date" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white" style="color-scheme: dark;">
+                        <input type="number" id="t-day" min="1" max="31" placeholder="Day (1-31)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
                         <input type="text" id="t-tags" placeholder="Tags (e.g. tax, misc)" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
                     </div>
                     <button type="submit" class="w-full bg-indigo-600 text-white rounded-lg py-2 text-sm font-bold shadow-lg shadow-indigo-900/20">Save Transaction</button>
@@ -163,7 +163,7 @@
                     <input type="text" id="b-name" placeholder="Bill Name" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
                     <div class="grid grid-cols-2 gap-3">
                         <input type="number" id="b-amount" step="0.01" min="0" placeholder="Amount ($)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-                        <input type="date" id="b-date" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white" style="color-scheme: dark;">
+                        <input type="number" id="b-day" min="1" max="31" placeholder="Day (1-31)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
                     </div>
                     <input type="text" id="b-tags" placeholder="Tags (e.g. utility)" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
                     <button type="submit" class="w-full bg-amber-600 text-white rounded-lg py-2 text-sm font-bold shadow-lg shadow-amber-900/20">Save Bill</button>
@@ -203,7 +203,7 @@
                     <select id="dp-id" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"><option value="">-- Select Debt --</option></select>
                     <div class="grid grid-cols-2 gap-3">
                         <input type="number" id="dp-amt" step="0.01" min="0.01" placeholder="Amount ($)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-                        <input type="date" id="dp-date" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white" style="color-scheme: dark;">
+                        <input type="number" id="dp-day" min="1" max="31" placeholder="Day (1-31)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
                     </div>
                     <button type="submit" class="w-full bg-emerald-600 text-white rounded-lg py-2 text-sm font-bold shadow-lg shadow-emerald-900/20">Submit Payment</button>
                 </form>
@@ -279,7 +279,7 @@
         let dom = {};
         try {
             dom = {
-                tDate: document.getElementById('t-date'), bDate: document.getElementById('b-date'), dpDate: document.getElementById('dp-date'),
+                tDay: document.getElementById('t-day'), bDay: document.getElementById('b-day'), dpDay: document.getElementById('dp-day'),
                 tType: document.getElementById('t-type'), tAmt: document.getElementById('t-amount'), tCat: document.getElementById('t-cat'), tTags: document.getElementById('t-tags'),
                 bName: document.getElementById('b-name'), bAmt: document.getElementById('b-amount'), bTags: document.getElementById('b-tags'),
                 dName: document.getElementById('d-name'), dBal: document.getElementById('d-bal'), dApr: document.getElementById('d-apr'), dPmt: document.getElementById('d-pmt'),
@@ -291,16 +291,17 @@
         } catch(e) { alert("DOM Init Error: " + e.message); }
 
         // State Objects
-        let data = { transactions: [], bills: [], debts: [], debtPayments: [] };
+        let data = { transactions: [], bills: [], debts: [], debtPayments: [], lastMonth: -1 };
         let charts = { expense: null, debt: null };
         let currentTab = 'home';
         let sortPrefs = { t: 'date-desc', b: 'date-asc', d: 'bal-desc' };
 
+        const _today = new Date();
+        const currMonthShort = _today.toLocaleString('default', { month: 'short' });
+        const currMonthLong = _today.toLocaleString('default', { month: 'long', year: 'numeric' });
+
         // iOS Safari Safe Date formatting
-        function getTodayStr() {
-            const d = new Date();
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        }
+        function getTodayStr() { return _today.getDate(); }
         
         // Parses string YYYY-MM-DD safely on Safari by replacing - with /
         function safeDateParse(dateStr) {
@@ -309,7 +310,17 @@
             return new Date(dateStr);
         }
 
-        function formatD(dateStr) { return safeDateParse(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+        function formatD(val) {
+            if (!val) return '';
+            if (typeof val === 'string' && val.includes('-')) return safeDateParse(val).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return `${currMonthShort} ${val}`;
+        }
+        function getDayVal(item) {
+            const val = item.day || item.date || item.dueDate;
+            if (typeof val === 'string' && val.includes('-')) return safeDateParse(val).getDate();
+            return parseInt(val) || 0;
+        }
+
         function formatC(num) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num || 0); }
         function genId() { return Date.now().toString(36) + Math.random().toString(36).substring(2); }
         function parseTags(str) { return str ? str.split(',').map(s => s.trim()).filter(s => s) : []; }
@@ -389,7 +400,8 @@
 
         function initState() {
             try {
-                dom.tDate.value = getTodayStr(); dom.bDate.value = getTodayStr(); dom.dpDate.value = getTodayStr();
+                document.getElementById('header-month').textContent = `- ${currMonthLong}`;
+                dom.tDay.value = getTodayStr(); dom.bDay.value = getTodayStr(); dom.dpDay.value = getTodayStr();
                 
                 const saved = localStorage.getItem('fintrack_ios_data');
                 if (saved) {
@@ -401,11 +413,20 @@
                 } else {
                     loadMockData(); // Initial load if completely empty
                 }
+
+                // Automatic Monthly Reset Logic
+                const currentMonthNum = _today.getMonth();
+                if (data.lastMonth !== currentMonthNum) {
+                    if (data.bills) data.bills.forEach(b => b.isPaid = false);
+                    data.lastMonth = currentMonthNum;
+                    saveState();
+                }
+
                 updateUI();
                 switchTab('home'); // Default to home view
             } catch(e) { 
                 alert("Init Error: " + e.message); 
-                data = { transactions: [], bills: [], debts: [], debtPayments: [] }; // Reset safety
+                data = { transactions: [], bills: [], debts: [], debtPayments: [], lastMonth: _today.getMonth() };
                 updateUI();
             }
         }
@@ -413,8 +434,8 @@
         function handleAddTransaction(e) {
             try {
                 e.preventDefault();
-                data.transactions.push({ id: genId(), type: dom.tType.value, amount: parseFloat(dom.tAmt.value), category: dom.tCat.value.trim(), date: dom.tDate.value, tags: parseTags(dom.tTags.value) });
-                document.getElementById('form-transaction').reset(); dom.tDate.value = getTodayStr();
+                data.transactions.push({ id: genId(), type: dom.tType.value, amount: parseFloat(dom.tAmt.value), category: dom.tCat.value.trim(), day: parseInt(dom.tDay.value), tags: parseTags(dom.tTags.value) });
+                document.getElementById('form-transaction').reset(); dom.tDay.value = getTodayStr();
                 saveState();
                 return false;
             } catch(e) { alert("Add TX Error: " + e.message); return false; }
@@ -423,13 +444,14 @@
         function handleAddBill(e) {
             try {
                 e.preventDefault();
-                data.bills.push({ id: genId(), name: dom.bName.value.trim(), amount: parseFloat(dom.bAmt.value), dueDate: dom.bDate.value, tags: parseTags(dom.bTags.value), isPaid: false });
-                document.getElementById('form-bill').reset(); dom.bDate.value = getTodayStr();
+                data.bills.push({ id: genId(), name: dom.bName.value.trim(), amount: parseFloat(dom.bAmt.value), day: parseInt(dom.bDay.value), tags: parseTags(dom.bTags.value), isPaid: false });
+                document.getElementById('form-bill').reset(); dom.bDay.value = getTodayStr();
                 saveState();
                 return false;
             } catch(e) { alert("Add Bill Error: " + e.message); return false; }
         }
 
+        function handleAddDebt(e) {
         function handleAddDebt(e) {
             try {
                 e.preventDefault();
@@ -448,8 +470,8 @@
                 const amt = parseFloat(dom.dpAmt.value);
                 if(debt) {
                     debt.balance = Math.max(0, debt.balance - amt);
-                    data.debtPayments.push({ id: genId(), debtId: debt.id, debtName: debt.name, amount: amt, date: dom.dpDate.value });
-                    document.getElementById('form-debt-pmt').reset(); dom.dpDate.value = getTodayStr();
+                    data.debtPayments.push({ id: genId(), debtId: debt.id, debtName: debt.name, amount: amt, day: parseInt(dom.dpDay.value) });
+                    document.getElementById('form-debt-pmt').reset(); dom.dpDay.value = getTodayStr();
                     saveState();
                 }
                 return false;
@@ -481,8 +503,8 @@
                 dom.sDebt.textContent = formatC(totDebt);
 
                 let sortedT = [...data.transactions];
-                if (sortPrefs.t === 'date-desc') sortedT.sort((a,b)=>safeDateParse(b.date)-safeDateParse(a.date));
-                if (sortPrefs.t === 'date-asc') sortedT.sort((a,b)=>safeDateParse(a.date)-safeDateParse(b.date));
+                if (sortPrefs.t === 'date-desc') sortedT.sort((a,b)=>getDayVal(b)-getDayVal(a));
+                if (sortPrefs.t === 'date-asc') sortedT.sort((a,b)=>getDayVal(a)-getDayVal(b));
                 if (sortPrefs.t === 'amt-desc') sortedT.sort((a,b)=>b.amount-a.amount);
 
                 dom.listT.innerHTML = sortedT.length ? sortedT.map(t => `
@@ -491,7 +513,7 @@
                             <i class="fa-solid fa-grip-vertical text-slate-600 mr-3 drag-handle"></i>
                             <div>
                                 <p class="text-sm font-bold text-white">${t.category}</p>
-                                <p class="text-xs text-slate-400">${formatD(t.date)}</p>
+                                <p class="text-xs text-slate-400">${formatD(t.day || t.date)}</p>
                                 ${renderTags(t.tags)}
                             </div>
                         </div>
@@ -503,7 +525,7 @@
                 `).join('') : '<li class="p-3 text-center text-xs text-slate-500">No transactions</li>';
 
                 let sortedB = [...data.bills];
-                if (sortPrefs.b === 'date-asc') sortedB.sort((a,b)=>safeDateParse(a.dueDate)-safeDateParse(b.dueDate));
+                if (sortPrefs.b === 'date-asc') sortedB.sort((a,b)=>getDayVal(a)-getDayVal(b));
                 if (sortPrefs.b === 'status') sortedB.sort((a,b)=>a.isPaid-b.isPaid);
 
                 dom.listB.innerHTML = sortedB.length ? sortedB.map(b => `
@@ -513,7 +535,7 @@
                             <button onclick="toggleBill('${b.id}')" class="w-8 h-8 shrink-0 rounded border ${b.isPaid?'bg-emerald-500 border-emerald-500 text-white':'border-slate-500 text-transparent'} flex items-center justify-center transition-colors"><i class="fa-solid fa-check text-xs"></i></button>
                             <div>
                                 <p class="text-sm font-bold ${b.isPaid?'text-slate-500 line-through':'text-white'}">${b.name}</p>
-                                <p class="text-xs text-slate-400">${b.isPaid?'Paid':'Due'}: ${formatD(b.dueDate)}</p>
+                                <p class="text-xs text-slate-400">${b.isPaid?'Paid':'Due'}: ${formatD(b.day || b.dueDate)}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
@@ -552,7 +574,7 @@
                 // Render Debt Payments
                 dom.listDP.innerHTML = data.debtPayments.length ? data.debtPayments.slice().reverse().map(p => `
                     <div class="bg-slate-800 border border-slate-700 p-2 rounded-lg flex justify-between items-center">
-                        <div><p class="text-xs font-bold text-emerald-400">${formatC(p.amount)} <span class="text-slate-300 font-normal">to ${p.debtName}</span></p><p class="text-[10px] text-slate-500">${formatD(p.date)}</p></div>
+                        <div><p class="text-xs font-bold text-emerald-400">${formatC(p.amount)} <span class="text-slate-300 font-normal">to ${p.debtName}</span></p><p class="text-[10px] text-slate-500">${formatD(p.day || p.date)}</p></div>
                     </div>
                 `).join('') : '<p class="text-center text-xs text-slate-500 p-3">No payments logged</p>';
 
@@ -628,7 +650,7 @@
                 if(data.transactions && data.transactions.length > 0) {
                     data.transactions.forEach(t => {
                         const tags = t.tags.length > 0 ? `Tags: ${t.tags.join(', ')}` : "";
-                        csvContent += `"${t.category}","${t.type === 'income' ? 'Income' : 'Expense'}","${t.amount}","${t.date}","${tags}"\n`;
+                        csvContent += `"${t.category}","${t.type === 'income' ? 'Income' : 'Expense'}","${t.amount}","Day: ${t.day || t.date}","${tags}"\n`;
                     });
                 } else { csvContent += ",No Transactions Logged,,,\n"; }
 
@@ -638,7 +660,7 @@
                     data.bills.forEach(b => {
                         const tags = b.tags.length > 0 ? `Tags: ${b.tags.join(', ')}` : "";
                         const status = b.isPaid ? 'Paid' : 'Unpaid';
-                        csvContent += `"${b.name}","Bill","${b.amount}","Due: ${b.dueDate}","Status: ${status} | ${tags}"\n`;
+                        csvContent += `"${b.name}","Bill","${b.amount}","Day: ${b.day || b.dueDate}","Status: ${status} | ${tags}"\n`;
                     });
                 } else { csvContent += ",No Bills Logged,,,\n"; }
 
@@ -654,7 +676,7 @@
                 csvContent += "\n--- DEBT PAYMENTS ---\n";
                 if(data.debtPayments && data.debtPayments.length > 0) {
                     data.debtPayments.forEach(p => {
-                        csvContent += `"${p.debtName}","Payment","${p.amount}","${p.date}",""\n`;
+                        csvContent += `"${p.debtName}","Payment","${p.amount}","Day: ${p.day || p.date}",""\n`;
                     });
                 } else { csvContent += ",No Payments Logged,,,\n"; }
 
@@ -705,7 +727,8 @@
                             if (currentSection === 'transactions') {
                                 let tags = [];
                                 if(cols[4] && cols[4].includes('Tags: ')) tags = parseTags(cols[4].replace('Tags: ', ''));
-                                newData.transactions.push({ id: genId(), category: cols[0], type: cols[1].toLowerCase() === 'income' ? 'income' : 'expense', amount: parseFloat(cols[2]) || 0, date: cols[3], tags: tags });
+                                let dVal = cols[3].replace('Day: ', '');
+                                newData.transactions.push({ id: genId(), category: cols[0], type: cols[1].toLowerCase() === 'income' ? 'income' : 'expense', amount: parseFloat(cols[2]) || 0, day: dVal.includes('-') ? safeDateParse(dVal).getDate() : parseInt(dVal), tags: tags });
                             } 
                             else if (currentSection === 'bills') {
                                 let isPaid = false, tags = [];
@@ -714,7 +737,8 @@
                                     const tagMatch = cols[4].match(/Tags: (.*)/);
                                     if (tagMatch) tags = parseTags(tagMatch[1]);
                                 }
-                                newData.bills.push({ id: genId(), name: cols[0], amount: parseFloat(cols[2]) || 0, dueDate: cols[3].replace('Due: ', ''), tags: tags, isPaid: isPaid });
+                                let dVal = cols[3].replace('Day: ', '').replace('Due: ', '');
+                                newData.bills.push({ id: genId(), name: cols[0], amount: parseFloat(cols[2]) || 0, day: dVal.includes('-') ? safeDateParse(dVal).getDate() : parseInt(dVal), tags: tags, isPaid: isPaid });
                             } 
                             else if (currentSection === 'debts') {
                                 let apr = parseFloat(cols[3].replace('APR: ', '').replace('%', ''));
@@ -724,7 +748,8 @@
                             else if (currentSection === 'debtPayments') {
                                 let debtName = cols[0];
                                 let matchingDebt = newData.debts.find(d => d.name === debtName);
-                                newData.debtPayments.push({ id: genId(), debtId: matchingDebt ? matchingDebt.id : genId(), debtName: debtName, amount: parseFloat(cols[2]) || 0, date: cols[3] });
+                                let dVal = cols[3].replace('Day: ', '');
+                                newData.debtPayments.push({ id: genId(), debtId: matchingDebt ? matchingDebt.id : genId(), debtName: debtName, amount: parseFloat(cols[2]) || 0, day: dVal.includes('-') ? safeDateParse(dVal).getDate() : parseInt(dVal) });
                             }
                         });
 
