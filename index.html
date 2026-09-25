@@ -244,6 +244,51 @@
             </div>
         </div>
 
+        <div id="view-savings" class="hidden space-y-4 max-w-2xl mx-auto">
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-4">
+                <h3 class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-piggy-bank text-cyan-400 mr-2"></i>Add Savings Goal</h3>
+                <form id="form-savings" onsubmit="return handleAddSavings(event)" class="space-y-3">
+                    <input type="text" id="sv-name" placeholder="Savings Goal Name" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="number" id="sv-bal" step="0.01" min="0" placeholder="Current Balance ($)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                        <input type="number" id="sv-apy" step="0.01" min="0" placeholder="APY (%)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                    <input type="number" id="sv-contrib" step="0.01" min="0" placeholder="Monthly Contribution ($)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    <button type="submit" class="w-full bg-cyan-600 text-white rounded-lg py-2 text-sm font-bold shadow-lg shadow-cyan-900/20">Track Savings</button>
+                </form>
+            </div>
+            
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-4">
+                <h3 class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-money-bill-trend-up text-emerald-400 mr-2"></i>Log Contribution</h3>
+                <form id="form-savings-contrib" onsubmit="return handleSavingsContrib(event)" class="space-y-3">
+                    <select id="sc-id" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"><option value="">-- Select Goal --</option></select>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="number" id="sc-amt" step="0.01" min="0.01" placeholder="Amount ($)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                        <input type="number" id="sc-day" min="1" max="31" placeholder="Day (1-31)" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 text-white rounded-lg py-2 text-sm font-bold shadow-lg shadow-emerald-900/20">Submit Contribution</button>
+                </form>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[250px]">
+                    <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-list text-cyan-400 mr-2"></i>Active Goals <span id="subtotal-s" class="ml-2 text-xs text-slate-400 font-normal"></span></h3>
+                        <select id="sort-s" onchange="changeSort('s', this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1 outline-none">
+                            <option value="bal-desc">Balance (High)</option>
+                            <option value="name">Name (A-Z)</option>
+                            <option value="custom">Custom Order</option>
+                        </select>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-3 hide-scroll bg-slate-900/30"><div id="list-savings" class="space-y-2"></div></div>
+                </div>
+                <div class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[250px]">
+                    <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl"><h3 class="text-sm font-bold text-white"><i class="fa-solid fa-history text-emerald-400 mr-2"></i>Contribution History</h3></div>
+                    <div class="flex-1 overflow-y-auto p-3 hide-scroll bg-slate-900/30"><div id="list-savings-contrib" class="space-y-2"></div></div>
+                </div>
+            </div>
+        </div>
+
         <div id="view-settings" class="hidden space-y-4 max-w-2xl mx-auto">
             <section class="bg-slate-800 rounded-xl p-4 border border-slate-700 flex flex-col justify-center items-center text-center">
                 <i class="fa-solid fa-file-csv text-4xl text-emerald-500 mb-3"></i>
@@ -279,6 +324,9 @@
         <button onclick="switchTab('debt')" id="nav-debt" class="flex-1 pt-3 pb-1 flex flex-col items-center text-slate-500 transition-colors">
             <i class="fa-solid fa-credit-card mb-1 text-lg"></i><span class="text-[10px] font-bold">Debt</span>
         </button>
+        <button onclick="switchTab('savings')" id="nav-savings" class="flex-1 pt-3 pb-1 flex flex-col items-center text-slate-500 transition-colors">
+            <i class="fa-solid fa-piggy-bank mb-1 text-lg"></i><span class="text-[10px] font-bold">Savings</span>
+        </button>
         <button onclick="switchTab('settings')" id="nav-settings" class="flex-1 pt-3 pb-1 flex flex-col items-center text-slate-500 transition-colors">
             <i class="fa-solid fa-gear mb-1 text-lg"></i><span class="text-[10px] font-bold">Settings</span>
         </button>
@@ -300,17 +348,17 @@
                 bName: document.getElementById('b-name'), bAmt: document.getElementById('b-amount'), bTags: document.getElementById('b-tags'),
                 dName: document.getElementById('d-name'), dBal: document.getElementById('d-bal'), dApr: document.getElementById('d-apr'), dPmt: document.getElementById('d-pmt'),
                 dpId: document.getElementById('dp-id'), dpAmt: document.getElementById('dp-amt'),
-                listT: document.getElementById('list-transactions'), listB: document.getElementById('list-bills'), listD: document.getElementById('list-debts'), listDP: document.getElementById('list-debt-payments'),
+                listT: document.getElementById('list-transactions'), listB: document.getElementById('list-bills'), listD: document.getElementById('list-debts'), listDP: document.getElementById('list-debt-payments'), listS: document.getElementById('list-savings'), listSC: document.getElementById('list-savings-contrib'),
                 sBal: document.getElementById('stat-balance'), sInc: document.getElementById('stat-income'), sExp: document.getElementById('stat-expenses'), sUnp: document.getElementById('stat-unpaid'),
                 sDebt: document.getElementById('stat-debt')
             };
         } catch(e) { alert("DOM Init Error: " + e.message); }
 
         // State Objects
-        let data = { transactions: [], bills: [], debts: [], debtPayments: [], lastMonth: -1 };
+        let data = { transactions: [], bills: [], debts: [], debtPayments: [], savings: [], savingsContributions: [], lastMonth: -1 };
         let charts = { expense: null, debt: null };
         let currentTab = 'home';
-        let sortPrefs = { t: 'date-desc', b: 'date-asc', d: 'bal-desc' };
+        let sortPrefs = { t: 'date-desc', b: 'date-asc', d: 'bal-desc', s: 'bal-desc' };
         
         let selectedT = new Set();
         let selectedB = new Set();
@@ -374,7 +422,7 @@
         function switchTab(tabId) {
             try {
                 // Hide all views
-                ['home', 'transactions', 'bills', 'debt', 'settings'].forEach(id => {
+                ['home', 'transactions', 'bills', 'debt', 'savings', 'settings'].forEach(id => {
                     document.getElementById('view-' + id).classList.add('hidden');
                     document.getElementById('view-' + id).classList.remove('block');
                     
@@ -412,7 +460,7 @@
                 data.transactions = [];
                 data.bills = [];
                 data.debts = [];
-                data.debtPayments = [];
+                data.debtPayments = []; data.savings = []; data.savingsContributions = [];
                 saveState();
             } catch(e) { alert("Mock Data Error: " + e.message); }
         }
@@ -428,7 +476,7 @@
                     if(!data.transactions) data.transactions = [];
                     if(!data.bills) data.bills = [];
                     if(!data.debts) data.debts = [];
-                    if(!data.debtPayments) data.debtPayments = [];
+                    if(!data.debtPayments) data.debtPayments = []; data.savings = []; data.savingsContributions = [];
                 } else {
                     loadMockData(); // Initial load if completely empty
                 }
@@ -445,7 +493,7 @@
                 switchTab('home'); // Default to home view
             } catch(e) { 
                 alert("Init Error: " + e.message); 
-                data = { transactions: [], bills: [], debts: [], debtPayments: [], lastMonth: _today.getMonth() };
+                data = { transactions: [], bills: [], debts: [], debtPayments: [], savings: [], savingsContributions: [], lastMonth: _today.getMonth() };
                 updateUI();
             }
         }
@@ -470,6 +518,36 @@
             } catch(e) { alert("Add Bill Error: " + e.message); return false; }
         }
 
+        function handleAddSavings(e) {
+            e.preventDefault();
+            data.savings.push({
+                id: genId(), name: dom.sName.value.trim(),
+                balance: parseFloat(dom.sBal.value),
+                apy: parseFloat(dom.sApy.value),
+                contribution: parseFloat(dom.sContrib.value)
+            });
+            e.target.reset(); saveState(); return false;
+        }
+        function handleSavingsContrib(e) {
+            e.preventDefault();
+            const sid = dom.scId.value;
+            const amt = parseFloat(dom.scAmt.value);
+            const day = parseInt(dom.scDay.value);
+            data.savingsContributions.push({ id: genId(), sId: sid, amount: amt, day: day });
+            const s = data.savings.find(x => x.id === sid);
+            if(s) s.balance += amt;
+            e.target.reset(); saveState(); return false;
+        }
+        function delSavings(id) { data.savings = data.savings.filter(s => s.id !== id); saveState(); }
+        function delSavingsContrib(id) { 
+            const sc = data.savingsContributions.find(x => x.id === id);
+            if(sc) {
+                const s = data.savings.find(x => x.id === sc.sId);
+                if(s) s.balance -= sc.amount;
+                data.savingsContributions = data.savingsContributions.filter(x => x.id !== id);
+                saveState();
+            }
+        }
         function handleAddDebt(e) {
             try {
                 e.preventDefault();
@@ -557,6 +635,11 @@
                 dom.sExp.textContent = formatC(exp);
                 dom.sUnp.textContent = formatC(unp);
                 dom.sBal.textContent = formatC(inc - exp);
+                                let totSavings = 0;
+                if(data.savings) data.savings.forEach(s => totSavings += s.balance);
+                if(dom.sSavings) dom.sSavings.textContent = formatC(totSavings);
+                const subS = document.getElementById('subtotal-s');
+                if(subS) subS.textContent = `(${formatC(totSavings)})`;
                 dom.sDebt.textContent = formatC(totDebt);
 
                 const tNet = data.transactions.reduce((acc, t) => t.type === 'income' ? acc + t.amount : acc - t.amount, 0);
@@ -617,6 +700,41 @@
                 let sortedD = [...data.debts];
                 if (sortPrefs.d === 'bal-desc') sortedD.sort((a,b)=>b.balance-a.balance);
                 if (sortPrefs.d === 'name') sortedD.sort((a,b)=>a.name.localeCompare(b.name));
+
+                                dom.scId.innerHTML = '<option value="">-- Select Goal --</option>' + (data.savings||[]).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                
+                let sortedS = [...(data.savings||[])];
+                if (sortPrefs.s === 'bal-desc') sortedS.sort((a,b)=>b.balance-a.balance);
+                if (sortPrefs.s === 'name') sortedS.sort((a,b)=>a.name.localeCompare(b.name));
+
+                if(dom.listS) dom.listS.innerHTML = sortedS.length ? sortedS.map(s => `
+                    <li class="p-3 bg-slate-800 rounded-lg border border-slate-700 flex justify-between items-center" data-id="${s.id}">
+                        <div>
+                            <div class="text-sm font-bold text-white">${s.name} <span class="text-cyan-400 text-xs ml-2">${s.apy}% APY</span></div>
+                            <div class="text-xs text-slate-400 mt-1">Goal: ${formatC(s.contribution)}/mo</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-bold text-white mb-1">${formatC(s.balance)}</div>
+                            <button onclick="delSavings('${s.id}')" class="text-rose-400 hover:text-rose-300 text-xs"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </li>
+                `).join('') : '<p class="text-center text-xs text-slate-500 p-3">No goals</p>';
+
+                let sortedSC = [...(data.savingsContributions||[])].sort((a,b)=>b.day-a.day);
+                if(dom.listSC) dom.listSC.innerHTML = sortedSC.length ? sortedSC.map(sc => {
+                    const sv = (data.savings||[]).find(x => x.id === sc.sId);
+                    return `
+                    <li class="p-2 flex justify-between items-center bg-slate-800 border-b border-slate-700/50 last:border-0 rounded" data-id="${sc.id}">
+                        <div>
+                            <div class="text-xs font-bold text-white">${sv ? sv.name : 'Unknown Goal'}</div>
+                            <div class="text-[10px] text-slate-400">Day ${sc.day}</div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-bold text-emerald-400">+${formatC(sc.amount)}</span>
+                            <button onclick="delSavingsContrib('${sc.id}')" class="text-rose-400 text-[10px]"><i class="fa-solid fa-times"></i></button>
+                        </div>
+                    </li>`;
+                }).join('') : '<p class="text-center text-xs text-slate-500 p-3">No history</p>';
 
                 dom.dpId.innerHTML = '<option value="">-- Select Debt --</option>';
                 dom.listD.innerHTML = sortedD.length ? sortedD.map(d => {
@@ -737,6 +855,21 @@
 
                 // Debts
                 csvContent += "\n--- DEBT PLANNER ---\n";
+                
+                // Savings
+                csvContent += "\n--- SAVINGS ---\n";
+                if(data.savings && data.savings.length > 0) {
+                    data.savings.forEach(s => { csvContent += `${s.name},${s.apy},${s.balance},${s.contribution}\n`; });
+                } else { csvContent += ",No Savings Tracked,,,\n"; }
+
+                csvContent += "\n--- SAVINGS CONTRIBUTIONS ---\n";
+                if(data.savingsContributions && data.savingsContributions.length > 0) {
+                    data.savingsContributions.forEach(sc => {
+                        let sv = data.savings.find(x => x.id === sc.sId);
+                        csvContent += `${sv ? sv.name : 'Unknown'},${sc.amount},${sc.day}\n`;
+                    });
+                } else { csvContent += ",No Contributions Logged,,,\n"; }
+
                 if(data.debts && data.debts.length > 0) {
                     data.debts.forEach(d => {
                         csvContent += `"${d.name}","Debt Balance","${d.balance}","APR: ${d.apr}%","Monthly Pmt: $${d.payment}"\n`;
@@ -778,7 +911,7 @@
                         const text = e.target.result;
                         const lines = text.split('\n').map(l => l.trim()).filter(l => l);
                         let currentSection = '';
-                        let newData = { transactions: [], bills: [], debts: [], debtPayments: [] };
+                        let newData = { transactions: [], bills: [], debts: [], debtPayments: [], savings: [], savingsContributions: [] };
 
                         lines.forEach(line => {
                             if (line.includes('--- TRANSACTIONS ---')) { currentSection = 'transactions'; return; }
@@ -793,7 +926,7 @@
                             if(!colsMatch) return;
                             const cols = colsMatch.map(s => s.replace(/^"|"$/g, '').trim());
                             
-                            if (cols.length < 3 || cols[1] === "No Transactions Logged" || cols[1] === "No Bills Logged" || cols[1] === "No Debts Tracked" || cols[1] === "No Payments Logged") return;
+                            if (cols.length < 3 || cols[1] === "No Transactions Logged" || cols[1] === "No Bills Logged" || cols[1] === "No Debts Tracked" || cols[1] === "No Payments Logged" || cols[1] === "No Savings Tracked" || cols[1] === "No Contributions Logged") return;
 
                             if (currentSection === 'transactions') {
                                 let tags = [];
@@ -811,6 +944,13 @@
                                 let dVal = cols[3].replace('Day: ', '').replace('Due: ', '');
                                 newData.bills.push({ id: genId(), name: cols[0], amount: parseFloat(cols[2]) || 0, day: dVal.includes('-') ? safeDateParse(dVal).getDate() : parseInt(dVal), tags: tags, isPaid: isPaid });
                             } 
+                                                        else if (currentSection === 'savings') {
+                                newData.savings.push({ id: genId(), name: cols[0], apy: parseFloat(cols[1]) || 0, balance: parseFloat(cols[2]) || 0, contribution: parseFloat(cols[3]) || 0 });
+                            }
+                            else if (currentSection === 'savingsContribs') {
+                                let sv = newData.savings.find(x => x.name === cols[0]);
+                                if(sv) newData.savingsContributions.push({ id: genId(), sId: sv.id, amount: parseFloat(cols[1]) || 0, day: parseInt(cols[2]) || 1 });
+                            }
                             else if (currentSection === 'debts') {
                                 let apr = parseFloat(cols[3].replace('APR: ', '').replace('%', ''));
                                 let pmt = parseFloat(cols[4].replace('Monthly Pmt: $', ''));
