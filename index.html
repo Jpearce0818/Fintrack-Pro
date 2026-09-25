@@ -2,7 +2,9 @@
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>FinTrack Pro - Offline Finance</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -22,7 +24,7 @@
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 10px; border: 2px solid #0f172a; }
@@ -31,6 +33,12 @@
         .hide-scroll::-webkit-scrollbar { display: none; }
         .pdf-export-mode { background: #0f172a !important; padding: 20px !important; width: 100% !important; }
         .pdf-export-mode form, .pdf-export-mode button:not(.pdf-keep) { display: none !important; }
+        
+        /* iOS Safari Input styling fixes */
+        input, select, textarea {
+            -webkit-appearance: none;
+            appearance: none;
+        }
     </style>
 </head>
 <body class="text-slate-300 bg-slate-900 h-screen flex flex-col overflow-hidden relative">
@@ -46,8 +54,8 @@
             <div class="text-xs font-medium text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-3 py-1.5 rounded-full hidden sm:flex items-center gap-2 shadow-sm">
                 <i class="fa-solid fa-hard-drive"></i><span>Offline Mode</span>
             </div>
-            <button onclick="toggleModal('share-modal')" class="bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg px-4 py-2 text-sm transition-colors flex items-center gap-2 shadow-sm border border-slate-600">
-                <i class="fa-solid fa-share-nodes"></i> Share & Export
+            <button type="button" onclick="toggleModal('share-modal')" class="bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg px-4 py-2 text-sm transition-colors flex items-center gap-2 shadow-sm border border-slate-600">
+                <i class="fa-solid fa-share-nodes"></i> <span class="hidden sm:inline">Share & Export</span>
             </button>
         </div>
     </header>
@@ -55,33 +63,33 @@
     <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8" id="main-scroll-container">
         <div id="pdf-content-area" class="max-w-7xl mx-auto space-y-6">
             
-            <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 <div class="bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-700 flex flex-col justify-between relative overflow-hidden group">
                     <div class="absolute top-0 right-0 p-6 opacity-5 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform duration-500"><i class="fa-solid fa-scale-balanced text-6xl text-white"></i></div>
                     <div class="relative z-10">
                         <p class="text-sm font-medium text-slate-400 mb-1">Total Balance (Available)</p>
-                        <h2 class="text-3xl font-bold text-white" id="total-balance">$0.00</h2>
+                        <h2 class="text-2xl md:text-3xl font-bold text-white" id="total-balance">$0.00</h2>
                     </div>
                 </div>
                 <div class="bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-700 flex flex-col justify-between relative overflow-hidden group">
                     <div class="absolute top-0 right-0 p-6 opacity-5 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform duration-500"><i class="fa-solid fa-arrow-trend-up text-6xl text-emerald-500"></i></div>
                     <div class="relative z-10">
                         <p class="text-sm font-medium text-slate-400 mb-1">Total Income</p>
-                        <h2 class="text-3xl font-bold text-emerald-400" id="total-income">+$0.00</h2>
+                        <h2 class="text-2xl md:text-3xl font-bold text-emerald-400" id="total-income">+$0.00</h2>
                     </div>
                 </div>
                 <div class="bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-700 flex flex-col justify-between relative overflow-hidden group">
                     <div class="absolute top-0 right-0 p-6 opacity-5 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform duration-500"><i class="fa-solid fa-arrow-trend-down text-6xl text-rose-500"></i></div>
                     <div class="relative z-10">
                         <p class="text-sm font-medium text-slate-400 mb-1">Total Expenses (Inc. Paid Bills)</p>
-                        <h2 class="text-3xl font-bold text-rose-400" id="total-expenses">-$0.00</h2>
+                        <h2 class="text-2xl md:text-3xl font-bold text-rose-400" id="total-expenses">-$0.00</h2>
                     </div>
                 </div>
                 <div class="bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-700 flex flex-col justify-between relative overflow-hidden group">
                     <div class="absolute top-0 right-0 p-6 opacity-5 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform duration-500"><i class="fa-solid fa-file-invoice-dollar text-6xl text-amber-500"></i></div>
                     <div class="relative z-10">
                         <p class="text-sm font-medium text-slate-400 mb-1">Unpaid Bills (Upcoming)</p>
-                        <h2 class="text-3xl font-bold text-amber-400" id="total-unpaid-bills">$0.00</h2>
+                        <h2 class="text-2xl md:text-3xl font-bold text-amber-400" id="total-unpaid-bills">$0.00</h2>
                     </div>
                 </div>
             </section>
@@ -102,7 +110,7 @@
                         <label class="block text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">Timeframe (Months)</label>
                         <input type="number" id="forecast-months" value="6" min="1" max="120" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
                     </div>
-                    <button onclick="calculateForecast()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg px-4 py-2 text-sm transition-colors mb-6 shadow-sm border border-slate-600">Calculate Forecast</button>
+                    <button type="button" onclick="calculateForecast()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg px-4 py-2 text-sm transition-colors mb-6 shadow-sm border border-slate-600">Calculate Forecast</button>
                     <div class="mt-auto bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
                         <p class="text-sm font-medium text-slate-400 mb-1 text-center">Projected Balance</p>
                         <h2 class="text-2xl font-bold text-white text-center" id="forecast-result">$0.00</h2>
@@ -111,10 +119,10 @@
                 </div>
             </section>
 
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Transactions Column -->
                 <div class="space-y-6">
-                    <section class="bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-700" data-html2canvas-ignore>
+                    <section class="bg-slate-800 rounded-2xl p-4 md:p-6 shadow-lg border border-slate-700" data-html2canvas-ignore>
                         <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-plus-circle text-indigo-400"></i> Add Transaction</h3>
                         <form id="transaction-form" class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                             <div><label class="block text-xs font-semibold text-slate-400 mb-1">Type</label><select id="trans-type" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm"><option value="income">Income</option><option value="expense">Expense</option></select></div>
@@ -125,15 +133,15 @@
                             <div class="sm:col-span-2"><button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg px-4 py-2 text-sm transition-colors flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20"><i class="fa-solid fa-check"></i> Save Transaction</button></div>
                         </form>
                     </section>
-                    <section class="bg-slate-800 rounded-2xl shadow-lg border border-slate-700 flex flex-col h-[500px]">
-                        <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/50 rounded-t-2xl"><h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-list-ul text-indigo-400"></i> Transactions Log</h3></div>
+                    <section class="bg-slate-800 rounded-2xl shadow-lg border border-slate-700 flex flex-col h-[400px] md:h-[500px]">
+                        <div class="p-4 md:p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/50 rounded-t-2xl"><h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-list-ul text-indigo-400"></i> Transactions Log</h3></div>
                         <div class="flex-1 overflow-y-auto p-0 hide-scroll"><ul id="transactions-list" class="divide-y divide-slate-700/50"><li class="p-6 text-center text-slate-500 text-sm" id="empty-trans">No data.</li></ul></div>
                     </section>
                 </div>
 
                 <!-- Bills Column -->
                 <div class="space-y-6">
-                    <section class="bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-700" data-html2canvas-ignore>
+                    <section class="bg-slate-800 rounded-2xl p-4 md:p-6 shadow-lg border border-slate-700" data-html2canvas-ignore>
                         <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-calendar-plus text-amber-400"></i> Add Bill</h3>
                         <form id="bill-form" class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                             <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-400 mb-1">Bill Name</label><input type="text" id="bill-name" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm" placeholder="e.g. Electric Bill"></div>
@@ -143,8 +151,8 @@
                             <div class="sm:col-span-2"><button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-lg px-4 py-2 text-sm transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> Save Bill</button></div>
                         </form>
                     </section>
-                    <section class="bg-slate-800 rounded-2xl shadow-lg border border-slate-700 flex flex-col h-[500px]">
-                        <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/50 rounded-t-2xl"><h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-amber-400"></i> Upcoming Bills</h3></div>
+                    <section class="bg-slate-800 rounded-2xl shadow-lg border border-slate-700 flex flex-col h-[400px] md:h-[500px]">
+                        <div class="p-4 md:p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/50 rounded-t-2xl"><h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-amber-400"></i> Upcoming Bills</h3></div>
                         <div class="flex-1 overflow-y-auto p-4 bg-slate-900/30 hide-scroll"><div class="space-y-3" id="bills-list"><p class="text-center text-slate-500 text-sm mt-4" id="empty-bills">No bills.</p></div></div>
                     </section>
                 </div>
@@ -207,32 +215,32 @@
         </div>
     </main>
 
-    <div id="share-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
-        <div class="bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-2xl mx-4 overflow-hidden transform scale-95 transition-transform duration-300" id="share-modal-content">
-            <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/80">
-                <h2 class="text-xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-share-nodes text-indigo-400"></i> Share & Export Data</h2>
-                <button onclick="toggleModal('share-modal')" class="text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+    <div id="share-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 p-4">
+        <div class="bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="share-modal-content">
+            <div class="p-4 md:p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/80">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-share-nodes text-indigo-400"></i> Share & Export</h2>
+                <button type="button" onclick="toggleModal('share-modal')" class="text-slate-400 hover:text-white transition-colors p-2"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div class="bg-slate-900/50 p-5 rounded-xl border border-slate-700 flex flex-col items-center text-center">
                     <div class="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-xl mb-3"><i class="fa-regular fa-file-pdf"></i></div>
                     <h3 class="text-white font-semibold mb-1">1-Page PDF Summary</h3>
                     <p class="text-xs text-slate-400 mb-4 flex-1">Export a clean PDF containing top-level balances and charts.</p>
-                    <button onclick="exportToPDF()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-medium rounded-lg px-4 py-2 text-sm transition-colors">Generate PDF</button>
+                    <button type="button" onclick="exportToPDF()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-medium rounded-lg px-4 py-2 text-sm transition-colors">Generate PDF</button>
                 </div>
                 <div class="bg-slate-900/50 p-5 rounded-xl border border-slate-700 flex flex-col items-center text-center">
                     <div class="w-12 h-12 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl mb-3"><i class="fa-solid fa-code-compare"></i></div>
                     <h3 class="text-white font-semibold mb-1">Data Sync</h3>
                     <p class="text-xs text-slate-400 mb-4 flex-1">Generate a secure code to copy your data to another device.</p>
-                    <button onclick="generateSyncCode()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg px-4 py-2 text-sm transition-colors">Generate Code</button>
+                    <button type="button" onclick="generateSyncCode()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg px-4 py-2 text-sm transition-colors">Generate Code</button>
                 </div>
             </div>
-            <div class="px-6 pb-6 border-t border-slate-700 pt-6 bg-slate-850">
+            <div class="px-4 md:px-6 pb-4 md:pb-6 border-t border-slate-700 pt-4 md:pt-6 bg-slate-850">
                 <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">Sync Code / Import Data</label>
                 <textarea id="sync-code-area" rows="3" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-xs font-mono text-slate-300 focus:border-indigo-500 transition-colors mb-3" placeholder="Paste a base64 sync code here to overwrite your data..."></textarea>
                 <div class="flex gap-3">
-                    <button onclick="copySyncCode()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg px-4 py-2 text-sm transition-colors border border-slate-600">Copy Code</button>
-                    <button onclick="importSyncCode()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg px-4 py-2 text-sm transition-colors">Import Data</button>
+                    <button type="button" onclick="copySyncCode()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg px-4 py-2 text-sm transition-colors border border-slate-600">Copy Code</button>
+                    <button type="button" onclick="importSyncCode()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg px-4 py-2 text-sm transition-colors">Import Data</button>
                 </div>
             </div>
         </div>
@@ -247,13 +255,26 @@
         Chart.defaults.color = '#94a3b8';
         Chart.defaults.borderColor = '#334155';
         let myExpenseChart = null, myDebtChart = null;
-        const today = new Date().toISOString().split('T')[0];
+        
+        // Ensure accurate date serialization for iOS Safari
+        const todayObj = new Date();
+        const today = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
         
         // Data arrays
         let transactions = [];
         let bills = [];
         let debts = [];
         let debtPayments = [];
+
+        // Safe Storage Wrappers for iOS Safari Strict/Private mode
+        function safeGetItem(key) {
+            try { return localStorage.getItem(key); }
+            catch (e) { console.warn('Storage read restricted by iOS/Browser', e); return null; }
+        }
+        function safeSetItem(key, value) {
+            try { localStorage.setItem(key, value); }
+            catch (e) { console.warn('Storage write restricted by iOS/Browser. Data will not persist after reload.', e); }
+        }
 
         // UI elements lookup
         const transForm = document.getElementById('transaction-form'), billForm = document.getElementById('bill-form');
@@ -271,70 +292,66 @@
         const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
         function forceInitializeMockData() {
-            // Using a strictly new unique key to guarantee it bypasses any old cache the user has.
-            const forceKey = 'fintrack_pro_force_load_vFinal1';
+            const forceKey = 'fintrack_pro_force_load_vFinal2_ios_fix';
             
-            if (!localStorage.getItem(forceKey)) {
-                console.log("Forcibly injecting requested mock data...");
+            if (!safeGetItem(forceKey)) {
+                console.log("Injecting requested mock data...");
+                
+                const nowIso = new Date().toISOString();
                 
                 transactions = [
-                    { id: generateId(), type: 'income', amount: 3750.00, category: 'JP CHECK 1', date: today, tags: ['income'], createdAt: new Date().toISOString() },
-                    { id: generateId(), type: 'income', amount: 2875.00, category: 'EJP CHECK 1', date: today, tags: ['income'], createdAt: new Date().toISOString() },
-                    { id: generateId(), type: 'expense', amount: 561.00, category: 'SAVINGS', date: today, tags: ['savings'], createdAt: new Date().toISOString() },
-                    { id: generateId(), type: 'expense', amount: 561.00, category: 'SAVINGS', date: today, tags: ['savings'], createdAt: new Date().toISOString() },
-                    { id: generateId(), type: 'expense', amount: 442.00, category: 'Spending', date: today, tags: ['spending'], createdAt: new Date().toISOString() }
+                    { id: generateId(), type: 'income', amount: 3750.00, category: 'JP CHECK 1', date: today, tags: ['income'], createdAt: nowIso },
+                    { id: generateId(), type: 'income', amount: 2875.00, category: 'EJP CHECK 1', date: today, tags: ['income'], createdAt: nowIso },
+                    { id: generateId(), type: 'expense', amount: 561.00, category: 'SAVINGS', date: today, tags: ['savings'], createdAt: nowIso },
+                    { id: generateId(), type: 'expense', amount: 561.00, category: 'SAVINGS', date: today, tags: ['savings'], createdAt: nowIso },
+                    { id: generateId(), type: 'expense', amount: 442.00, category: 'Spending', date: today, tags: ['spending'], createdAt: nowIso }
                 ];
 
                 bills = [
-                    { id: generateId(), name: 'Netflix + Kindle', amount: 30.00, dueDate: today, isPaid: false, tags: ['entertainment'], createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'Cell Phone - JP', amount: 120.00, dueDate: today, isPaid: false, tags: ['utilities'], createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'Kojak + Koda', amount: 121.00, dueDate: today, isPaid: false, tags: ['pets'], createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'Insurance - life', amount: 163.00, dueDate: today, isPaid: false, tags: ['insurance'], createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'Roth savings', amount: 115.00, dueDate: today, isPaid: false, tags: ['savings'], createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'Gas', amount: 80.00, dueDate: today, isPaid: false, tags: ['auto'], createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'Insurance - car', amount: 225.00, dueDate: today, isPaid: false, tags: ['insurance'], createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'Gym', amount: 38.00, dueDate: today, isPaid: false, tags: ['health'], createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'Food', amount: 400.00, dueDate: today, isPaid: false, tags: ['groceries'], createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'House', amount: 1540.00, dueDate: today, isPaid: false, tags: ['housing'], createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'Savings', amount: 678.00, dueDate: today, isPaid: false, tags: ['savings'], createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'Car', amount: 611.00, dueDate: today, isPaid: false, tags: ['auto'], createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'Credit Cards', amount: 300.00, dueDate: today, isPaid: false, tags: ['debt'], createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'Christmas', amount: 150.00, dueDate: today, isPaid: false, tags: ['gifts'], createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'Redbud Roundup', amount: 490.00, dueDate: today, isPaid: false, tags: ['misc'], createdAt: new Date().toISOString() }
+                    { id: generateId(), name: 'Netflix + Kindle', amount: 30.00, dueDate: today, isPaid: false, tags: ['entertainment'], createdAt: nowIso },
+                    { id: generateId(), name: 'Cell Phone - JP', amount: 120.00, dueDate: today, isPaid: false, tags: ['utilities'], createdAt: nowIso },
+                    { id: generateId(), name: 'Kojak + Koda', amount: 121.00, dueDate: today, isPaid: false, tags: ['pets'], createdAt: nowIso },
+                    { id: generateId(), name: 'Insurance - life', amount: 163.00, dueDate: today, isPaid: false, tags: ['insurance'], createdAt: nowIso },
+                    { id: generateId(), name: 'Roth savings', amount: 115.00, dueDate: today, isPaid: false, tags: ['savings'], createdAt: nowIso },
+                    { id: generateId(), name: 'Gas', amount: 80.00, dueDate: today, isPaid: false, tags: ['auto'], createdAt: nowIso },
+                    { id: generateId(), name: 'Insurance - car', amount: 225.00, dueDate: today, isPaid: false, tags: ['insurance'], createdAt: nowIso },
+                    { id: generateId(), name: 'Gym', amount: 38.00, dueDate: today, isPaid: false, tags: ['health'], createdAt: nowIso },
+                    { id: generateId(), name: 'Food', amount: 400.00, dueDate: today, isPaid: false, tags: ['groceries'], createdAt: nowIso },
+                    { id: generateId(), name: 'House', amount: 1540.00, dueDate: today, isPaid: false, tags: ['housing'], createdAt: nowIso },
+                    { id: generateId(), name: 'Savings', amount: 678.00, dueDate: today, isPaid: false, tags: ['savings'], createdAt: nowIso },
+                    { id: generateId(), name: 'Car', amount: 611.00, dueDate: today, isPaid: false, tags: ['auto'], createdAt: nowIso },
+                    { id: generateId(), name: 'Credit Cards', amount: 300.00, dueDate: today, isPaid: false, tags: ['debt'], createdAt: nowIso },
+                    { id: generateId(), name: 'Christmas', amount: 150.00, dueDate: today, isPaid: false, tags: ['gifts'], createdAt: nowIso },
+                    { id: generateId(), name: 'Redbud Roundup', amount: 490.00, dueDate: today, isPaid: false, tags: ['misc'], createdAt: nowIso }
                 ];
 
-                // Auto-map House, Car, and CC to the debt planner to make the app fully fleshed out
                 debts = [
-                    { id: generateId(), name: 'House', balance: 250000, apr: 5.5, payment: 1540, createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'Car', balance: 32000, apr: 6.0, payment: 611, createdAt: new Date().toISOString() },
-                    { id: generateId(), name: 'Credit Cards', balance: 8500, apr: 19.9, payment: 300, createdAt: new Date().toISOString() }
+                    { id: generateId(), name: 'House', balance: 250000, apr: 5.5, payment: 1540, createdAt: nowIso },
+                    { id: generateId(), name: 'Car', balance: 32000, apr: 6.0, payment: 611, createdAt: nowIso },
+                    { id: generateId(), name: 'Credit Cards', balance: 8500, apr: 19.9, payment: 300, createdAt: nowIso }
                 ];
 
                 debtPayments = [];
 
-                // Save to local storage under stable keys
-                localStorage.setItem('ft_data_transactions', JSON.stringify(transactions));
-                localStorage.setItem('ft_data_bills', JSON.stringify(bills));
-                localStorage.setItem('ft_data_debts', JSON.stringify(debts));
-                localStorage.setItem('ft_data_debt_payments', JSON.stringify(debtPayments));
-                
-                // Flag that initialization occurred
-                localStorage.setItem(forceKey, 'true');
+                safeSetItem('ft_data_transactions', JSON.stringify(transactions));
+                safeSetItem('ft_data_bills', JSON.stringify(bills));
+                safeSetItem('ft_data_debts', JSON.stringify(debts));
+                safeSetItem('ft_data_debt_payments', JSON.stringify(debtPayments));
+                safeSetItem(forceKey, 'true');
             } else {
-                // Load normally
-                transactions = JSON.parse(localStorage.getItem('ft_data_transactions')) || [];
-                bills = JSON.parse(localStorage.getItem('ft_data_bills')) || [];
-                debts = JSON.parse(localStorage.getItem('ft_data_debts')) || [];
-                debtPayments = JSON.parse(localStorage.getItem('ft_data_debt_payments')) || [];
+                transactions = JSON.parse(safeGetItem('ft_data_transactions')) || [];
+                bills = JSON.parse(safeGetItem('ft_data_bills')) || [];
+                debts = JSON.parse(safeGetItem('ft_data_debts')) || [];
+                debtPayments = JSON.parse(safeGetItem('ft_data_debt_payments')) || [];
             }
         }
 
         function saveData() {
-            localStorage.setItem('ft_data_transactions', JSON.stringify(transactions));
-            localStorage.setItem('ft_data_bills', JSON.stringify(bills));
-            localStorage.setItem('ft_data_debts', JSON.stringify(debts));
-            localStorage.setItem('ft_data_debt_payments', JSON.stringify(debtPayments));
-            updateUI();
+            safeSetItem('ft_data_transactions', JSON.stringify(transactions));
+            safeSetItem('ft_data_bills', JSON.stringify(bills));
+            safeSetItem('ft_data_debts', JSON.stringify(debts));
+            safeSetItem('ft_data_debt_payments', JSON.stringify(debtPayments));
+            updateUI(); // Always update UI even if Safari blocked storage
         }
 
         function showToast(message) {
@@ -353,7 +370,18 @@
         }
 
         function formatCurrency(amount) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount); }
-        function formatDate(dateStr) { return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+        
+        // iOS Safari Safe Date Parser
+        function safeParseDate(dateStr) {
+            if (!dateStr) return new Date();
+            // Appending T12:00:00 prevents timezone shift on iOS Safari
+            return new Date(dateStr.includes('T') ? dateStr : dateStr + 'T12:00:00');
+        }
+        
+        function formatDate(dateStr) { 
+            return safeParseDate(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); 
+        }
+        
         function parseTags(tagString) { return tagString ? tagString.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0) : []; }
         
         function generateTagsHTML(tags, type = 'indigo') {
@@ -367,10 +395,9 @@
             const monthlyRate = (apr / 100) / 12;
             let months = 0, totalInterest = 0, balances = [balance]; 
             
-            // Handle edge case where payment doesn't cover interest
             if (balance > 0 && payment <= balance * monthlyRate) return { isInfinite: true, totalInterest: 0, months: 0, balances: [] };
 
-            while (balance > 0.01 && months < 600) { // cap at 50 years to prevent freezes
+            while (balance > 0.01 && months < 600) { 
                 let interestForMonth = balance * monthlyRate;
                 totalInterest += interestForMonth;
                 balance = balance + interestForMonth - payment;
@@ -394,7 +421,6 @@
                 else unpaidBillsTotal += b.amount;
             });
 
-            // True Balance calculation
             const totalBalance = totalIncome - totalExpense - unpaidBillsTotal;
 
             document.getElementById('total-balance').textContent = formatCurrency(totalBalance);
@@ -415,11 +441,11 @@
             transactions.forEach(t => { t.type === 'income' ? totalIncome += t.amount : totalExpense += t.amount });
             bills.forEach(b => { if (b.isPaid) totalExpense += b.amount; });
 
-            const allDates = [...transactions.map(t => new Date(t.date)), ...bills.map(b => new Date(b.createdAt))].filter(d => !isNaN(d.getTime()));
+            const allDates = [...transactions.map(t => safeParseDate(t.date)), ...bills.map(b => safeParseDate(b.createdAt))].filter(d => !isNaN(d.getTime()));
             const earliestDate = allDates.length > 0 ? new Date(Math.min(...allDates)) : new Date();
             
             let diffDays = (new Date() - earliestDate) / (1000 * 60 * 60 * 24);
-            diffDays = Math.max(diffDays, 30); // Default to at least 1 month division
+            diffDays = Math.max(diffDays, 30);
 
             const currentBalance = totalIncome - totalExpense;
             const averageMonthlyNet = (currentBalance / diffDays) * 30.44; 
@@ -489,7 +515,7 @@
 
         function renderTransactions() {
             transListEl.innerHTML = '';
-            const sortedTrans = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+            const sortedTrans = [...transactions].sort((a, b) => safeParseDate(b.date) - safeParseDate(a.date));
             if (sortedTrans.length === 0) { document.getElementById('empty-trans').style.display = 'block'; transListEl.appendChild(document.getElementById('empty-trans')); return; }
             document.getElementById('empty-trans').style.display = 'none';
 
@@ -507,7 +533,7 @@
                     </div>
                     <div class="flex items-center gap-4 flex-shrink-0">
                         <span class="font-bold ${isIncome ? 'text-emerald-400' : 'text-slate-100'}">${isIncome ? '+' : '-'}${formatCurrency(t.amount)}</span>
-                        <button class="text-slate-500 hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100" onclick="deleteTransaction('${t.id}')"><i class="fa-solid fa-trash text-sm"></i></button>
+                        <button type="button" class="text-slate-500 hover:text-rose-400 transition-colors p-2 -mr-2 sm:opacity-0 group-hover:opacity-100" onclick="deleteTransaction('${t.id}')"><i class="fa-solid fa-trash text-sm"></i></button>
                     </div>`;
                 transListEl.appendChild(li);
             });
@@ -515,30 +541,37 @@
 
         function renderBills() {
             billsListEl.innerHTML = '';
-            const sortedBills = [...bills].sort((a, b) => a.isPaid === b.isPaid ? new Date(a.dueDate) - new Date(b.dueDate) : a.isPaid ? 1 : -1);
+            const sortedBills = [...bills].sort((a, b) => a.isPaid === b.isPaid ? safeParseDate(a.dueDate) - safeParseDate(b.dueDate) : a.isPaid ? 1 : -1);
             if (sortedBills.length === 0) { document.getElementById('empty-bills').style.display = 'block'; billsListEl.appendChild(document.getElementById('empty-bills')); return; }
             document.getElementById('empty-bills').style.display = 'none';
 
+            // Safe midnight check for iOS
+            const startOfToday = new Date();
+            startOfToday.setHours(0,0,0,0);
+
             sortedBills.forEach(b => {
-                const isOverdue = new Date(b.dueDate + 'T00:00:00') < new Date().setHours(0,0,0,0) && !b.isPaid;
+                const billDateObj = safeParseDate(b.dueDate);
+                billDateObj.setHours(0,0,0,0);
+                const isOverdue = billDateObj < startOfToday && !b.isPaid;
+                
                 const statusColor = b.isPaid ? 'bg-emerald-900/10 border-emerald-900/50' : (isOverdue ? 'bg-rose-900/10 border-rose-900/50' : 'bg-slate-800 border-slate-700');
                 const div = document.createElement('div'); div.className = `p-4 rounded-xl border ${statusColor} shadow-sm transition-all relative group flex flex-col gap-2`;
                 
                 div.innerHTML = `
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex items-start gap-3 flex-1 min-w-0">
-                            <button onclick="toggleBillStatus('${b.id}')" class="w-6 h-6 mt-0.5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${b.isPaid ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'border-slate-500 text-transparent hover:border-indigo-400'}"><i class="fa-solid fa-check text-xs"></i></button>
-                            <div class="truncate">
+                            <button type="button" onclick="toggleBillStatus('${b.id}')" class="w-8 h-8 md:w-6 md:h-6 mt-0.5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${b.isPaid ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'border-slate-500 text-transparent hover:border-indigo-400'}"><i class="fa-solid fa-check text-xs"></i></button>
+                            <div class="truncate mt-1 md:mt-0">
                                 <p class="font-semibold text-sm ${b.isPaid ? 'text-slate-500 line-through' : 'text-white'} truncate">${b.name}</p>
                                 <p class="text-xs mt-0.5 ${isOverdue ? 'text-rose-400 font-medium' : 'text-slate-400'}">${b.isPaid ? 'Paid' : (isOverdue ? 'Overdue: ' : 'Due: ')} ${formatDate(b.dueDate)}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3 flex-shrink-0">
                             <span class="font-bold text-sm ${b.isPaid ? 'text-slate-600' : 'text-slate-200'}">${formatCurrency(b.amount)}</span>
-                            <button class="text-slate-600 hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100" onclick="deleteBill('${b.id}')"><i class="fa-solid fa-xmark"></i></button>
+                            <button type="button" class="text-slate-600 hover:text-rose-400 transition-colors p-2 -mr-2 sm:opacity-0 group-hover:opacity-100" onclick="deleteBill('${b.id}')"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     </div>
-                    ${b.tags && b.tags.length > 0 ? `<div class="ml-9">${generateTagsHTML(b.tags, 'slate')}</div>` : ''}`;
+                    ${b.tags && b.tags.length > 0 ? `<div class="ml-11 md:ml-9">${generateTagsHTML(b.tags, 'slate')}</div>` : ''}`;
                 billsListEl.appendChild(div);
             });
         }
@@ -559,43 +592,43 @@
 
                 div.innerHTML = `
                     <div class="flex items-start justify-between"><div class="flex-1 min-w-0"><p class="font-bold text-sm text-white truncate">${debt.name}</p><p class="text-xs text-slate-400 mt-0.5">Bal: <span class="text-slate-200 font-bold">${formatCurrency(debt.balance)}</span> • APR: ${debt.apr}%</p><p class="text-xs text-slate-400">Monthly Pmt: <span class="text-slate-200">${formatCurrency(debt.payment)}</span></p></div>
-                    <button class="text-slate-600 hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0" onclick="deleteDebt('${debt.id}')"><i class="fa-solid fa-trash text-sm"></i></button></div>${projectionHtml}`;
+                    <button type="button" class="text-slate-600 hover:text-rose-400 transition-colors p-2 -mr-2 sm:opacity-0 group-hover:opacity-100 flex-shrink-0" onclick="deleteDebt('${debt.id}')"><i class="fa-solid fa-trash text-sm"></i></button></div>${projectionHtml}`;
                 debtsListEl.appendChild(div);
             });
         }
 
         function renderDebtPayments() {
             debtPaymentsListEl.innerHTML = '';
-            const sortedPayments = [...debtPayments].sort((a, b) => new Date(b.date) - new Date(a.date));
+            const sortedPayments = [...debtPayments].sort((a, b) => safeParseDate(b.date) - safeParseDate(a.date));
             if (sortedPayments.length === 0) { document.getElementById('empty-debt-payments').style.display = 'block'; debtPaymentsListEl.appendChild(document.getElementById('empty-debt-payments')); return; }
             document.getElementById('empty-debt-payments').style.display = 'none';
 
             sortedPayments.forEach(pmt => {
                 const div = document.createElement('div'); div.className = `p-3 rounded-xl border bg-slate-800 border-slate-700 shadow-sm flex flex-col gap-1`;
-                div.innerHTML = `<div class="flex items-start justify-between"><div><p class="font-bold text-sm text-emerald-400">${formatCurrency(pmt.amount)} <span class="text-xs text-slate-400 font-normal">to</span> <span class="text-slate-200 text-sm">${pmt.debtName}</span></p><p class="text-[11px] text-slate-500">${formatDate(pmt.date)} ${pmt.note ? '• ' + pmt.note : ''}</p></div><button class="text-slate-600 hover:text-rose-400 transition-colors flex-shrink-0" onclick="deleteDebtPayment('${pmt.id}')"><i class="fa-solid fa-trash text-xs"></i></button></div>`;
+                div.innerHTML = `<div class="flex items-start justify-between"><div><p class="font-bold text-sm text-emerald-400">${formatCurrency(pmt.amount)} <span class="text-xs text-slate-400 font-normal">to</span> <span class="text-slate-200 text-sm">${pmt.debtName}</span></p><p class="text-[11px] text-slate-500">${formatDate(pmt.date)} ${pmt.note ? '• ' + pmt.note : ''}</p></div><button type="button" class="text-slate-600 hover:text-rose-400 transition-colors p-2 -mt-1 -mr-1 flex-shrink-0" onclick="deleteDebtPayment('${pmt.id}')"><i class="fa-solid fa-trash text-xs"></i></button></div>`;
                 debtPaymentsListEl.appendChild(div);
             });
         }
 
-        transForm.addEventListener('submit', e => {
-            e.preventDefault();
+        transForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // STRICT FIRST LINE to prevent page reloads
             transactions.push({ id: generateId(), type: document.getElementById('trans-type').value, amount: parseFloat(document.getElementById('trans-amount').value), category: document.getElementById('trans-category').value.trim(), date: document.getElementById('trans-date').value, tags: parseTags(document.getElementById('trans-tags').value), createdAt: new Date().toISOString() });
             saveData(); transForm.reset(); document.getElementById('trans-date').value = today; document.getElementById('trans-type').value = 'expense'; showToast("Transaction saved!");
         });
 
-        billForm.addEventListener('submit', e => {
+        billForm.addEventListener('submit', function(e) {
             e.preventDefault();
             bills.push({ id: generateId(), name: document.getElementById('bill-name').value.trim(), amount: parseFloat(document.getElementById('bill-amount').value), dueDate: document.getElementById('bill-date').value, tags: parseTags(document.getElementById('bill-tags').value), isPaid: false, createdAt: new Date().toISOString() });
             saveData(); billForm.reset(); document.getElementById('bill-date').value = today; showToast("Bill saved!");
         });
 
-        debtForm.addEventListener('submit', e => {
+        debtForm.addEventListener('submit', function(e) {
             e.preventDefault();
             debts.push({ id: generateId(), name: document.getElementById('debt-name').value.trim(), balance: parseFloat(document.getElementById('debt-balance').value), apr: parseFloat(document.getElementById('debt-apr').value), payment: parseFloat(document.getElementById('debt-payment').value), createdAt: new Date().toISOString() });
             saveData(); debtForm.reset(); showToast("Debt added!");
         });
 
-        debtPaymentForm.addEventListener('submit', e => {
+        debtPaymentForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const debtId = paymentDebtSelect.value; if (!debtId) { showToast("Select a debt!"); return; }
             const amount = parseFloat(document.getElementById('payment-amount').value), date = document.getElementById('payment-date').value, note = document.getElementById('payment-note').value.trim(), debt = debts.find(d => d.id === debtId);
@@ -606,20 +639,20 @@
             }
         });
 
-        window.deleteTransaction = id => { transactions = transactions.filter(t => t.id !== id); saveData(); showToast("Deleted"); };
-        window.deleteBill = id => { bills = bills.filter(b => b.id !== id); saveData(); showToast("Deleted"); };
-        window.deleteDebt = id => { debts = debts.filter(d => d.id !== id); saveData(); showToast("Deleted"); };
-        window.deleteDebtPayment = id => { 
+        window.deleteTransaction = function(id) { transactions = transactions.filter(t => t.id !== id); saveData(); showToast("Deleted"); };
+        window.deleteBill = function(id) { bills = bills.filter(b => b.id !== id); saveData(); showToast("Deleted"); };
+        window.deleteDebt = function(id) { debts = debts.filter(d => d.id !== id); saveData(); showToast("Deleted"); };
+        window.deleteDebtPayment = function(id) { 
             const pmt = debtPayments.find(p => p.id === id);
             if (pmt) { const debt = debts.find(d => d.id === pmt.debtId); if (debt) debt.balance += pmt.amount; debtPayments = debtPayments.filter(p => p.id !== id); saveData(); showToast("Log removed, balance restored"); }
         };
-        window.toggleBillStatus = id => { const bill = bills.find(b => b.id === id); if (bill) { bill.isPaid = !bill.isPaid; saveData(); } };
+        window.toggleBillStatus = function(id) { const bill = bills.find(b => b.id === id); if (bill) { bill.isPaid = !bill.isPaid; saveData(); } };
 
         function exportToPDF() {
             toggleModal('share-modal'); showToast("Generating PDF...");
             const element = document.getElementById('pdf-content-area');
             const opt = { margin: 0.3, filename: `FinTrack_Summary_${new Date().toISOString().split('T')[0]}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, backgroundColor: '#0f172a' }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
-            element.classList.add('pdf-export-mode'); // CSS class hides forms and buttons
+            element.classList.add('pdf-export-mode');
             html2pdf().set(opt).from(element).save().then(() => { element.classList.remove('pdf-export-mode'); showToast("PDF Downloaded!"); });
         }
 
@@ -630,7 +663,13 @@
         }
 
         function copySyncCode() {
-            const textarea = document.getElementById('sync-code-area'); textarea.select(); document.execCommand('copy'); showToast("Copied to clipboard!");
+            const textarea = document.getElementById('sync-code-area'); textarea.select(); 
+            // Fallback for older iOS versions
+            if(navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textarea.value).then(() => showToast("Copied to clipboard!"));
+            } else {
+                document.execCommand('copy'); showToast("Copied to clipboard!");
+            }
         }
 
         function importSyncCode() {
@@ -655,9 +694,11 @@
             calculateForecast(); 
         }
 
-        // Run bootstrap to guarantee the requested mock data exists, then render
-        forceInitializeMockData();
-        updateUI();
+        // Initialize App once DOM is fully ready (fixes potential Safari race conditions)
+        document.addEventListener('DOMContentLoaded', () => {
+            forceInitializeMockData();
+            updateUI();
+        });
 
     </script>
 </body>
