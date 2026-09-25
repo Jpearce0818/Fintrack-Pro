@@ -43,17 +43,17 @@
         .rounded-xl { border-radius: 0.75rem; }
         .rounded-t-xl { border-top-left-radius: 0.75rem; border-top-right-radius: 0.75rem; }
         
-        /* Safe Area Padding for iOS Bottom Bar & Notch */
-        /* Increased padding to ensure clearance on newer iPhones */
-        .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 10px); }
-        .pt-safe { padding-top: calc(env(safe-area-inset-top) + 50px); }
+        /* True Edge-to-Edge Safe Area Padding */
+        .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)) !important; }
+        .pt-safe { padding-top: max(1.5rem, env(safe-area-inset-top)) !important; }
+        
         .drag-handle { touch-action: none; cursor: grab; }
         .drag-handle:active { cursor: grabbing; }
     </style>
 </head>
 <body class="text-slate-300 bg-slate-900 h-screen flex flex-col overflow-hidden">
 
-    <header class="bg-slate-800 border-b border-slate-700 px-4 py-3 pt-safe flex items-center justify-between flex-shrink-0 z-10 shadow-md">
+    <header class="bg-slate-800 border-b border-slate-700 px-4 pb-3 pt-safe flex items-center justify-between flex-shrink-0 z-10 shadow-md">
         <div class="flex items-center gap-2">
             <div class="bg-indigo-500 text-white p-2 rounded-lg"><i class="fa-solid fa-wallet"></i></div>
             <h1 class="text-lg font-bold text-white tracking-tight">FinTrack iOS</h1>
@@ -251,19 +251,19 @@
     </main>
 
     <nav class="fixed bottom-0 left-0 w-full bg-slate-800/95 backdrop-blur border-t border-slate-700 flex justify-around pb-safe z-50">
-        <button onclick="switchTab('home')" id="nav-home" class="flex-1 py-3 flex flex-col items-center text-indigo-400 active-tab transition-colors">
+        <button onclick="switchTab('home')" id="nav-home" class="flex-1 pt-3 pb-1 flex flex-col items-center text-indigo-400 active-tab transition-colors">
             <i class="fa-solid fa-house mb-1 text-lg"></i><span class="text-[10px] font-bold">Home</span>
         </button>
-        <button onclick="switchTab('transactions')" id="nav-transactions" class="flex-1 py-3 flex flex-col items-center text-slate-500 transition-colors">
+        <button onclick="switchTab('transactions')" id="nav-transactions" class="flex-1 pt-3 pb-1 flex flex-col items-center text-slate-500 transition-colors">
             <i class="fa-solid fa-right-left mb-1 text-lg"></i><span class="text-[10px] font-bold">Transacts</span>
         </button>
-        <button onclick="switchTab('bills')" id="nav-bills" class="flex-1 py-3 flex flex-col items-center text-slate-500 transition-colors">
+        <button onclick="switchTab('bills')" id="nav-bills" class="flex-1 pt-3 pb-1 flex flex-col items-center text-slate-500 transition-colors">
             <i class="fa-solid fa-file-invoice mb-1 text-lg"></i><span class="text-[10px] font-bold">Bills</span>
         </button>
-        <button onclick="switchTab('debt')" id="nav-debt" class="flex-1 py-3 flex flex-col items-center text-slate-500 transition-colors">
+        <button onclick="switchTab('debt')" id="nav-debt" class="flex-1 pt-3 pb-1 flex flex-col items-center text-slate-500 transition-colors">
             <i class="fa-solid fa-credit-card mb-1 text-lg"></i><span class="text-[10px] font-bold">Debt</span>
         </button>
-        <button onclick="switchTab('settings')" id="nav-settings" class="flex-1 py-3 flex flex-col items-center text-slate-500 transition-colors">
+        <button onclick="switchTab('settings')" id="nav-settings" class="flex-1 pt-3 pb-1 flex flex-col items-center text-slate-500 transition-colors">
             <i class="fa-solid fa-gear mb-1 text-lg"></i><span class="text-[10px] font-bold">Settings</span>
         </button>
     </nav>
