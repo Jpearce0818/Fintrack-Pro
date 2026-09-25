@@ -32,7 +32,7 @@
         .hide-scroll::-webkit-scrollbar { display: none; }
         
         /* Strict iOS Input Resets */
-        input, select, textarea, button {
+        input[type="text"], input[type="number"], select, textarea, button {
             -webkit-appearance: none;
             appearance: none;
             border-radius: 0;
@@ -144,13 +144,19 @@
             
             <section class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[400px]">
                 <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl flex justify-between items-center">
-                    <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-list text-indigo-400 mr-2"></i>Transactions Ledger</h3>
-                    <select id="sort-t" onchange="changeSort('t', this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1 outline-none">
-                        <option value="date-desc">Date (Newest)</option>
-                        <option value="date-asc">Date (Oldest)</option>
-                        <option value="amt-desc">Amount (High)</option>
-                        <option value="custom">Custom Order</option>
-                    </select>
+                    <h3 class="text-sm font-bold text-white flex items-center">
+                        <input type="checkbox" id="chk-all-t" onchange="toggleAllT(this.checked)" class="mr-2 w-4 h-4 accent-indigo-500 rounded bg-slate-900 border-slate-600">
+                        <i class="fa-solid fa-list text-indigo-400 mr-2"></i>Ledger
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <button id="btn-bulk-del-t" onclick="deleteSelectedT()" class="hidden text-rose-400 hover:text-rose-300 text-xs font-bold px-2 py-1 bg-rose-900/30 rounded border border-rose-800"><i class="fa-solid fa-trash"></i></button>
+                        <select id="sort-t" onchange="changeSort('t', this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1 outline-none">
+                            <option value="date-desc">Date (Newest)</option>
+                            <option value="date-asc">Date (Oldest)</option>
+                            <option value="amt-desc">Amount (High)</option>
+                            <option value="custom">Custom Order</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="flex-1 overflow-y-auto hide-scroll p-0"><ul id="list-transactions" class="divide-y divide-slate-700/50"></ul></div>
             </section>
@@ -172,12 +178,19 @@
 
             <section class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col h-[400px]">
                 <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl flex justify-between items-center">
-                    <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-file-invoice text-amber-400 mr-2"></i>Upcoming Bills</h3>
-                    <select id="sort-b" onchange="changeSort('b', this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1 outline-none">
-                        <option value="date-asc">Due Date</option>
-                        <option value="status">Status (Unpaid First)</option>
-                        <option value="custom">Custom Order</option>
-                    </select>
+                    <h3 class="text-sm font-bold text-white flex items-center">
+                        <input type="checkbox" id="chk-all-b" onchange="toggleAllB(this.checked)" class="mr-2 w-4 h-4 accent-amber-500 rounded bg-slate-900 border-slate-600">
+                        <i class="fa-solid fa-file-invoice text-amber-400 mr-2"></i>Bills
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <button id="btn-bulk-pay-b" onclick="paySelectedB()" class="hidden text-emerald-400 hover:text-emerald-300 text-xs font-bold px-2 py-1 bg-emerald-900/30 rounded border border-emerald-800"><i class="fa-solid fa-check"></i></button>
+                        <button id="btn-bulk-del-b" onclick="deleteSelectedB()" class="hidden text-rose-400 hover:text-rose-300 text-xs font-bold px-2 py-1 bg-rose-900/30 rounded border border-rose-800"><i class="fa-solid fa-trash"></i></button>
+                        <select id="sort-b" onchange="changeSort('b', this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1 outline-none">
+                            <option value="date-asc">Due Date</option>
+                            <option value="status">Status (Unpaid First)</option>
+                            <option value="custom">Custom Order</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="flex-1 overflow-y-auto hide-scroll p-3 bg-slate-900/30"><div id="list-bills" class="space-y-2"></div></div>
             </section>
@@ -295,6 +308,9 @@
         let charts = { expense: null, debt: null };
         let currentTab = 'home';
         let sortPrefs = { t: 'date-desc', b: 'date-asc', d: 'bal-desc' };
+        
+        let selectedT = new Set();
+        let selectedB = new Set();
 
         const _today = new Date();
         const currMonthShort = _today.toLocaleString('default', { month: 'short' });
@@ -452,7 +468,6 @@
         }
 
         function handleAddDebt(e) {
-        function handleAddDebt(e) {
             try {
                 e.preventDefault();
                 data.debts.push({ id: genId(), name: dom.dName.value.trim(), balance: parseFloat(dom.dBal.value), apr: parseFloat(dom.dApr.value), payment: parseFloat(dom.dPmt.value) });
@@ -483,6 +498,45 @@
         function delDebt(id) { try { data.debts = data.debts.filter(d => d.id !== id); saveState(); } catch(e){} }
         function toggleBill(id) { try { const b = data.bills.find(x => x.id === id); if(b){ b.isPaid = !b.isPaid; saveState(); } } catch(e){} }
 
+        function toggleAllT(checked) { if(checked) data.transactions.forEach(t => selectedT.add(t.id)); else selectedT.clear(); updateUI(); }
+        function toggleAllB(checked) { if(checked) data.bills.forEach(b => selectedB.add(b.id)); else selectedB.clear(); updateUI(); }
+        function toggleSelectT(id, checked) { if(checked) selectedT.add(id); else selectedT.delete(id); updateSelectionUI(); }
+        function toggleSelectB(id, checked) { if(checked) selectedB.add(id); else selectedB.delete(id); updateSelectionUI(); }
+        
+        function deleteSelectedT() {
+            data.transactions = data.transactions.filter(t => !selectedT.has(t.id));
+            selectedT.clear();
+            saveState();
+        }
+        
+        function deleteSelectedB() {
+            data.bills = data.bills.filter(b => !selectedB.has(b.id));
+            selectedB.clear();
+            saveState();
+        }
+
+        function paySelectedB() {
+            data.bills.forEach(b => { if(selectedB.has(b.id)) b.isPaid = true; });
+            selectedB.clear();
+            saveState();
+        }
+
+        function updateSelectionUI() {
+            try {
+                const btnDelT = document.getElementById('btn-bulk-del-t');
+                const chkAllT = document.getElementById('chk-all-t');
+                if(btnDelT) btnDelT.classList.toggle('hidden', selectedT.size === 0);
+                if(chkAllT) chkAllT.checked = data.transactions.length > 0 && selectedT.size === data.transactions.length;
+
+                const btnDelB = document.getElementById('btn-bulk-del-b');
+                const btnPayB = document.getElementById('btn-bulk-pay-b');
+                const chkAllB = document.getElementById('chk-all-b');
+                if(btnDelB) btnDelB.classList.toggle('hidden', selectedB.size === 0);
+                if(btnPayB) btnPayB.classList.toggle('hidden', selectedB.size === 0);
+                if(chkAllB) chkAllB.checked = data.bills.length > 0 && selectedB.size === data.bills.length;
+            } catch(e) {}
+        }
+
         function renderTags(tags) {
             if(!tags || !tags.length) return '';
             return `<div class="flex gap-1 mt-1">${tags.map(t => `<span class="bg-slate-700 text-[9px] px-1.5 py-0.5 rounded text-slate-300 uppercase">${t}</span>`).join('')}</div>`;
@@ -510,6 +564,7 @@
                 dom.listT.innerHTML = sortedT.length ? sortedT.map(t => `
                     <li class="p-3 flex justify-between items-center bg-slate-800" data-id="${t.id}">
                         <div class="flex items-center">
+                            <input type="checkbox" onchange="toggleSelectT('${t.id}', this.checked)" ${selectedT.has(t.id)?'checked':''} class="w-4 h-4 mr-3 rounded border-slate-600 bg-slate-900 accent-indigo-500">
                             <i class="fa-solid fa-grip-vertical text-slate-600 mr-3 drag-handle"></i>
                             <div>
                                 <p class="text-sm font-bold text-white">${t.category}</p>
@@ -531,6 +586,7 @@
                 dom.listB.innerHTML = sortedB.length ? sortedB.map(b => `
                     <div class="bg-slate-800 border ${b.isPaid?'border-emerald-900/50 bg-emerald-900/10':'border-slate-700'} p-3 rounded-lg flex justify-between items-center" data-id="${b.id}">
                         <div class="flex gap-2 items-center">
+                            <input type="checkbox" onchange="toggleSelectB('${b.id}', this.checked)" ${selectedB.has(b.id)?'checked':''} class="w-4 h-4 mr-1 rounded border-slate-600 bg-slate-900 accent-amber-500">
                             <i class="fa-solid fa-grip-vertical text-slate-600 mr-2 drag-handle"></i>
                             <button onclick="toggleBill('${b.id}')" class="w-8 h-8 shrink-0 rounded border ${b.isPaid?'bg-emerald-500 border-emerald-500 text-white':'border-slate-500 text-transparent'} flex items-center justify-center transition-colors"><i class="fa-solid fa-check text-xs"></i></button>
                             <div>
@@ -577,6 +633,8 @@
                         <div><p class="text-xs font-bold text-emerald-400">${formatC(p.amount)} <span class="text-slate-300 font-normal">to ${p.debtName}</span></p><p class="text-[10px] text-slate-500">${formatD(p.day || p.date)}</p></div>
                     </div>
                 `).join('') : '<p class="text-center text-xs text-slate-500 p-3">No payments logged</p>';
+
+                updateSelectionUI();
 
                 if(currentTab === 'home') drawCharts();
                 handleForecast();
