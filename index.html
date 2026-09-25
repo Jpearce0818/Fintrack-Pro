@@ -350,7 +350,7 @@
                 dpId: document.getElementById('dp-id'), dpAmt: document.getElementById('dp-amt'),
                 listT: document.getElementById('list-transactions'), listB: document.getElementById('list-bills'), listD: document.getElementById('list-debts'), listDP: document.getElementById('list-debt-payments'), listS: document.getElementById('list-savings'), listSC: document.getElementById('list-savings-contrib'),
                 sBal: document.getElementById('stat-balance'), sInc: document.getElementById('stat-income'), sExp: document.getElementById('stat-expenses'), sUnp: document.getElementById('stat-unpaid'),
-                sDebt: document.getElementById('stat-debt'), sSavings: document.getElementById('s-tot-savings'), sName: document.getElementById('sv-name'), sBal: document.getElementById('sv-bal'), sApy: document.getElementById('sv-apy'), sContrib: document.getElementById('sv-contrib'), scId: document.getElementById('sc-id'), scAmt: document.getElementById('sc-amt'), scDay: document.getElementById('sc-day')
+                sDebt: document.getElementById('stat-debt'), sSavings: document.getElementById('s-tot-savings'), sName: document.getElementById('sv-name'), svBal: document.getElementById('sv-bal'), sApy: document.getElementById('sv-apy'), sContrib: document.getElementById('sv-contrib'), scId: document.getElementById('sc-id'), scAmt: document.getElementById('sc-amt'), scDay: document.getElementById('sc-day')
             };
         } catch(e) { alert("DOM Init Error: " + e.message); }
 
@@ -522,7 +522,7 @@
             e.preventDefault();
             data.savings.push({
                 id: genId(), name: dom.sName.value.trim(),
-                balance: parseFloat(dom.sBal.value),
+                balance: parseFloat(dom.svBal.value),
                 apy: parseFloat(dom.sApy.value),
                 contribution: parseFloat(dom.sContrib.value)
             });
@@ -657,7 +657,7 @@
                 if (sortPrefs.t === 'date-asc') sortedT.sort((a,b)=>getDayVal(a)-getDayVal(b));
                 if (sortPrefs.t === 'amt-desc') sortedT.sort((a,b)=>b.amount-a.amount);
 
-                dom.listT.innerHTML = sortedT.length ? sortedT.map(t => `
+                if(dom.listT) dom.listT.innerHTML = sortedT.length ? sortedT.map(t => `
                     <li class="p-3 flex justify-between items-center bg-slate-800" data-id="${t.id}">
                         <div class="flex items-center">
                             <input type="checkbox" onchange="toggleSelectT('${t.id}', this.checked)" ${selectedT.has(t.id)?'checked':''} class="w-4 h-4 mr-3 rounded border-slate-600 bg-slate-900 accent-indigo-500">
@@ -679,7 +679,7 @@
                 if (sortPrefs.b === 'date-asc') sortedB.sort((a,b)=>getDayVal(a)-getDayVal(b));
                 if (sortPrefs.b === 'status') sortedB.sort((a,b)=>a.isPaid-b.isPaid);
 
-                dom.listB.innerHTML = sortedB.length ? sortedB.map(b => `
+                if(dom.listB) dom.listB.innerHTML = sortedB.length ? sortedB.map(b => `
                     <div class="bg-slate-800 border ${b.isPaid?'border-emerald-900/50 bg-emerald-900/10':'border-slate-700'} p-3 rounded-lg flex justify-between items-center" data-id="${b.id}">
                         <div class="flex gap-2 items-center">
                             <input type="checkbox" onchange="toggleSelectB('${b.id}', this.checked)" ${selectedB.has(b.id)?'checked':''} class="w-4 h-4 mr-1 rounded border-slate-600 bg-slate-900 accent-amber-500">
@@ -701,7 +701,7 @@
                 if (sortPrefs.d === 'bal-desc') sortedD.sort((a,b)=>b.balance-a.balance);
                 if (sortPrefs.d === 'name') sortedD.sort((a,b)=>a.name.localeCompare(b.name));
 
-                                dom.scId.innerHTML = '<option value="">-- Select Goal --</option>' + (data.savings||[]).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                                if(dom.scId) dom.scId.innerHTML = '<option value="">-- Select Goal --</option>' + (data.savings||[]).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
                 
                 let sortedS = [...(data.savings||[])];
                 if (sortPrefs.s === 'bal-desc') sortedS.sort((a,b)=>b.balance-a.balance);
@@ -736,8 +736,8 @@
                     </li>`;
                 }).join('') : '<p class="text-center text-xs text-slate-500 p-3">No history</p>';
 
-                dom.dpId.innerHTML = '<option value="">-- Select Debt --</option>';
-                dom.listD.innerHTML = sortedD.length ? sortedD.map(d => {
+                if(dom.dpId) dom.dpId.innerHTML = '<option value="">-- Select Debt --</option>';
+                if(dom.listD) dom.listD.innerHTML = sortedD.length ? sortedD.map(d => {
                     if(d.balance>0) dom.dpId.innerHTML += `<option value="${d.id}">${d.name} (${formatC(d.balance)})</option>`;
                     return `
                     <div class="bg-slate-800 border border-slate-700 p-3 rounded-lg flex justify-between items-center" data-id="${d.id}">
@@ -759,7 +759,7 @@
                 }, 50);
 
                 // Render Debt Payments
-                dom.listDP.innerHTML = data.debtPayments.length ? data.debtPayments.slice().reverse().map(p => `
+                if(dom.listDP) dom.listDP.innerHTML = data.debtPayments.length ? data.debtPayments.slice().reverse().map(p => `
                     <div class="bg-slate-800 border border-slate-700 p-2 rounded-lg flex justify-between items-center">
                         <div><p class="text-xs font-bold text-emerald-400">${formatC(p.amount)} <span class="text-slate-300 font-normal">to ${p.debtName}</span></p><p class="text-[10px] text-slate-500">${formatD(p.day || p.date)}</p></div>
                     </div>
@@ -769,7 +769,7 @@
 
                 if(currentTab === 'home') drawCharts();
                 handleForecast();
-            } catch(e) { alert("UI Update Error: " + e.message); }
+            } catch(e) { alert("UI Update Error: " + e.message + " " + e.stack); }
         }
 
         function handleForecast() {
