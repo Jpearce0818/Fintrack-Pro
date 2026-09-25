@@ -527,6 +527,8 @@
                 else if(type === 'b') list = data.bills;
                 else if(type === 'd') list = data.debts;
                 else if(type === 's') list = data.savings;
+                else if(type === 'dp') list = data.debtPayments;
+                else if(type === 'sc') list = data.savingsContributions;
                 else return;
 
                 const item = list.find(x => x.id === id);
@@ -767,7 +769,7 @@
                             <i class="fa-solid fa-grip-vertical text-slate-600 mr-3 drag-handle"></i>
                             <div>
                                 <p class="text-sm font-bold text-white cursor-pointer active:opacity-50" onclick="editValue('t', '${t.id}', 'category', 'Category')">${t.category} <i class="fa-solid fa-pencil text-[8px] text-slate-500 opacity-50 ml-1"></i></p>
-                                <p class="text-xs text-slate-400">${formatD(t.day || t.date)}</p>
+                                <p class="text-xs text-slate-400 cursor-pointer active:opacity-50" onclick="editValue('t', '${t.id}', 'day', 'Day (1-31)')">${formatD(t.day || t.date)} <i class="fa-solid fa-pencil text-[8px] text-slate-500 opacity-50 ml-1"></i></p>
                                 ${renderTags(t.tags)}
                             </div>
                         </div>
@@ -790,7 +792,7 @@
                             <button onclick="toggleBill('${b.id}')" class="w-8 h-8 shrink-0 rounded border ${b.isPaid?'bg-emerald-500 border-emerald-500 text-white':'border-slate-500 text-transparent'} flex items-center justify-center transition-colors"><i class="fa-solid fa-check text-xs"></i></button>
                             <div>
                                 <p class="text-sm font-bold cursor-pointer active:opacity-50 ${b.isPaid?'text-slate-500 line-through':'text-white'}" onclick="editValue('b', '${b.id}', 'name', 'Bill Name')">${b.name} <i class="fa-solid fa-pencil text-[8px] text-slate-500 opacity-50 ml-1"></i></p>
-                                <p class="text-xs text-slate-400">${b.isPaid?'Paid':'Due'}: ${formatD(b.day || b.dueDate)}</p>
+                                <p class="text-xs text-slate-400 cursor-pointer active:opacity-50" onclick="editValue('b', '${b.id}', 'day', 'Day (1-31)')">${b.isPaid?'Paid':'Due'}: ${formatD(b.day || b.dueDate)} <i class="fa-solid fa-pencil text-[8px] text-slate-500 opacity-50 ml-1"></i></p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
@@ -830,7 +832,7 @@
                     <li class="p-2 flex justify-between items-center bg-slate-800 border-b border-slate-700/50 last:border-0 rounded" data-id="${sc.id}">
                         <div>
                             <div class="text-xs font-bold text-white">${sv ? sv.name : 'Unknown Goal'}</div>
-                            <div class="text-[10px] text-slate-400">Day ${sc.day}</div>
+                            <div class="text-[10px] text-slate-400 cursor-pointer active:opacity-50" onclick="editValue('sc', '${sc.id}', 'day', 'Day (1-31)')">Day ${sc.day} <i class="fa-solid fa-pencil text-[8px] opacity-50 ml-1"></i></div>
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="text-xs font-bold text-emerald-400">+${formatC(sc.amount)}</span>
@@ -864,7 +866,7 @@
                 // Render Debt Payments
                 if(dom.listDP) dom.listDP.innerHTML = data.debtPayments.length ? data.debtPayments.slice().reverse().map(p => `
                     <div class="bg-slate-800 border border-slate-700 p-2 rounded-lg flex justify-between items-center">
-                        <div><p class="text-xs font-bold text-emerald-400">${formatC(p.amount)} <span class="text-slate-300 font-normal">to ${p.debtName}</span></p><p class="text-[10px] text-slate-500">${formatD(p.day || p.date)}</p></div>
+                        <div><p class="text-xs font-bold text-emerald-400">${formatC(p.amount)} <span class="text-slate-300 font-normal">to ${p.debtName}</span></p><p class="text-[10px] text-slate-500 cursor-pointer active:opacity-50" onclick="editValue('dp', '${p.id}', 'day', 'Day (1-31)')">${formatD(p.day || p.date)} <i class="fa-solid fa-pencil text-[8px] opacity-50 ml-1"></i></p></div>
                     </div>
                 `).join('') : '<p class="text-center text-xs text-slate-500 p-3">No payments logged</p>';
 
